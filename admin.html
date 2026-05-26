@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>ADMIN · DESBALIZAR</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+:root{
+  --bg:#f5f5f3;
+  --white:#ffffff;
+  --black:#111827;
+  --gray:#6b7280;
+  --border:#e5e7eb;
+  --accent:#d4a017;
+  --red:#ef4444;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg);
+  color:var(--black);
+}
+
+/* NAV */
+
+nav{
+  background:white;
+  border-bottom:1px solid var(--border);
+  padding:18px 28px;
+}
+
+.nav-wrap{
+  max-width:1200px;
+  margin:auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.logo{
+  font-size:30px;
+  font-weight:800;
+}
+
+.logo span{
+  color:var(--accent);
+}
+
+/* CONTAINER */
+
+.container{
+  max-width:1200px;
+  margin:auto;
+  padding:40px 28px;
+}
+
+/* LOGIN */
+
+.login{
+  max-width:420px;
+  margin:80px auto;
+  background:white;
+  border-radius:24px;
+  padding:34px;
+  border:1px solid var(--border);
+}
+
+.login h1{
+  font-size:36px;
+  margin-bottom:10px;
+}
+
+.login p{
+  color:var(--gray);
+  margin-bottom:24px;
+}
+
+.input{
+  width:100%;
+  height:56px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  padding:0 16px;
+  font-size:15px;
+  margin-bottom:18px;
+}
+
+.btn{
+  width:100%;
+  height:56px;
+  border:none;
+  border-radius:14px;
+  background:var(--accent);
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+  font-size:15px;
+}
+
+/* PANEL */
+
+.panel{
+  display:none;
+}
+
+.title{
+  font-size:48px;
+  margin-bottom:30px;
+}
+
+/* FORM */
+
+.form{
+  background:white;
+  border-radius:24px;
+  border:1px solid var(--border);
+  padding:28px;
+  margin-bottom:30px;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+
+textarea{
+  width:100%;
+  min-height:120px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  padding:14px;
+  font-size:15px;
+  resize:vertical;
+  margin-bottom:18px;
+  font-family:inherit;
+}
+
+.label{
+  font-size:14px;
+  font-weight:700;
+  margin-bottom:8px;
+  display:block;
+}
+
+.actions{
+  display:flex;
+  gap:12px;
+}
+
+.save{
+  flex:1;
+  height:56px;
+  border:none;
+  border-radius:14px;
+  background:var(--accent);
+  color:white;
+  font-weight:700;
+  cursor:pointer;
+}
+
+.cancel{
+  width:180px;
+  border:none;
+  border-radius:14px;
+  background:#e5e7eb;
+  cursor:pointer;
+  font-weight:700;
+}
+
+/* LIST */
+
+.list{
+  display:flex;
+  flex-direction:column;
+  gap:18px;
+}
+
+.item{
+  background:white;
+  border-radius:24px;
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+
+.item-top{
+  display:flex;
+  gap:22px;
+  padding:20px;
+}
+
+.item img{
+  width:180px;
+  height:130px;
+  object-fit:cover;
+  border-radius:18px;
+}
+
+.item-info{
+  flex:1;
+}
+
+.item-title{
+  font-size:32px;
+  font-weight:800;
+  margin-bottom:8px;
+}
+
+.item-sub{
+  color:var(--gray);
+  margin-bottom:14px;
+}
+
+.tags{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.tag{
+  background:#f3f4f6;
+  padding:8px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+}
+
+.item-actions{
+  display:flex;
+  gap:12px;
+  margin-top:20px;
+}
+
+.edit{
+  height:48px;
+  padding:0 24px;
+  border:none;
+  border-radius:14px;
+  background:#111827;
+  color:white;
+  cursor:pointer;
+  font-weight:700;
+}
+
+.delete{
+  height:48px;
+  padding:0 24px;
+  border:none;
+  border-radius:14px;
+  background:var(--red);
+  color:white;
+  cursor:pointer;
+  font-weight:700;
+}
+
+@media(max-width:900px){
+
+  .grid{
+    grid-template-columns:1fr;
+  }
+
+  .item-top{
+    flex-direction:column;
+  }
+
+  .item img{
+    width:100%;
+    height:240px;
+  }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<nav>
+
+  <div class="nav-wrap">
+
+    <div class="logo">
+      DESBALIZAR <span>ADMIN</span>
+    </div>
+
+  </div>
+
+</nav>
+
+<!-- LOGIN -->
+
+<div class="login" id="login">
+
+  <h1>Panel Admin</h1>
+
+  <p>
+    Ingresá la contraseña
+  </p>
+
+  <input
+    type="password"
+    class="input"
+    id="pass"
+    placeholder="Contraseña"
+  >
+
+  <button class="btn" onclick="login()">
+    Ingresar
+  </button>
+
+</div>
+
+<!-- PANEL -->
+
+<div class="container panel" id="panel">
+
+  <h1 class="title">
+    Motores
+  </h1>
+
+  <!-- FORM -->
+
+  <div class="form">
+
+    <div class="grid">
+
+      <div>
+        <label class="label">
+          Marca
+        </label>
+
+        <input type="text" class="input" id="marca">
+      </div>
+
+      <div>
+        <label class="label">
+          Modelo
+        </label>
+
+        <input type="text" class="input" id="modelo">
+      </div>
+
+      <div>
+        <label class="label">
+          Año
+        </label>
+
+        <input type="text" class="input" id="anio">
+      </div>
+
+      <div>
+        <label class="label">
+          Cilindrada
+        </label>
+
+        <input type="text" class="input" id="cilindrada">
+      </div>
+
+      <div>
+        <label class="label">
+          Kilómetros
+        </label>
+
+        <input type="text" class="input" id="km">
+      </div>
+
+      <div>
+        <label class="label">
+          Video URL
+        </label>
+
+        <input type="text" class="input" id="video">
+      </div>
+
+    </div>
+
+    <label class="label">
+      Fotos (separadas por coma)
+    </label>
+
+    <textarea id="fotos"></textarea>
+
+    <label class="label">
+      Descripción
+    </label>
+
+    <textarea id="descripcion"></textarea>
+
+    <div class="actions">
+
+      <button class="save" onclick="guardarMotor()">
+        Guardar Motor
+      </button>
+
+      <button class="cancel" onclick="limpiar()">
+        Cancelar
+      </button>
+
+    </div>
+
+  </div>
+
+  <!-- LISTA -->
+
+  <div class="list" id="list"></div>
+
+</div>
+
+<script>
+
+/* ========================================= */
+
+const PASS = 'desbalizar2024';
+
+const SUPABASE_URL =
+'https://okjroggxyvwmlvowdldo.supabase.co';
+
+const SUPABASE_KEY =
+'sb_publishable_0K7PsSnXVWgiiQGbHk5-Vw_UF45s5la';
+
+/* ========================================= */
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+let motores = [];
+let editingId = null;
+
+/* ========================================= */
+
+function login(){
+
+  const pass = document.getElementById('pass').value;
+
+  if(pass !== PASS){
+
+    alert('Contraseña incorrecta');
+
+    return;
+  }
+
+  document.getElementById('login').style.display='none';
+
+  document.getElementById('panel').style.display='block';
+
+  cargarMotores();
+}
+
+/* ========================================= */
+
+async function cargarMotores(){
+
+  const { data, error } = await db
+    .from('motores')
+    .select('*')
+    .order('id',{ ascending:false });
+
+  if(error){
+
+    console.error(error);
+
+    alert('Error cargando motores');
+
+    return;
+  }
+
+  motores = data || [];
+
+  render();
+}
+
+/* ========================================= */
+
+function render(){
+
+  const list = document.getElementById('list');
+
+  if(!motores.length){
+
+    list.innerHTML = `
+      <div class="form">
+        No hay motores cargados
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML = motores.map(m=>`
+
+    <div class="item">
+
+      <div class="item-top">
+
+        <img src="${m.fotos?.[0] || ''}">
+
+        <div class="item-info">
+
+          <div class="item-title">
+            ${m.marca || ''} ${m.modelo || ''}
+          </div>
+
+          <div class="item-sub">
+            ${m.descripcion || ''}
+          </div>
+
+          <div class="tags">
+
+            <div class="tag">
+              ${m.anio || ''}
+            </div>
+
+            <div class="tag">
+              ${m.cilindrada || ''}
+            </div>
+
+            <div class="tag">
+              ${m.km || ''}
+            </div>
+
+          </div>
+
+          <div class="item-actions">
+
+            <button
+              class="edit"
+              onclick="editar(${m.id})"
+            >
+              Editar
+            </button>
+
+            <button
+              class="delete"
+              onclick="eliminar(${m.id})"
+            >
+              Eliminar
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `).join('');
+}
+
+/* ========================================= */
+
+function editar(id){
+
+  const m = motores.find(x=>x.id===id);
+
+  if(!m) return;
+
+  editingId = id;
+
+  document.getElementById('marca').value =
+  m.marca || '';
+
+  document.getElementById('modelo').value =
+  m.modelo || '';
+
+  document.getElementById('anio').value =
+  m.anio || '';
+
+  document.getElementById('cilindrada').value =
+  m.cilindrada || '';
+
+  document.getElementById('km').value =
+  m.km || '';
+
+  document.getElementById('video').value =
+  m.video || '';
+
+  document.getElementById('descripcion').value =
+  m.descripcion || '';
+
+  document.getElementById('fotos').value =
+  (m.fotos || []).join(',');
+
+  window.scrollTo({
+    top:0,
+    behavior:'smooth'
+  });
+}
+
+/* ========================================= */
+
+function limpiar(){
+
+  editingId = null;
+
+  document.getElementById('marca').value='';
+  document.getElementById('modelo').value='';
+  document.getElementById('anio').value='';
+  document.getElementById('cilindrada').value='';
+  document.getElementById('km').value='';
+  document.getElementById('video').value='';
+  document.getElementById('descripcion').value='';
+  document.getElementById('fotos').value='';
+}
+
+/* ========================================= */
+
+async function guardarMotor(){
+
+  const motor = {
+
+    marca:
+    document.getElementById('marca').value,
+
+    modelo:
+    document.getElementById('modelo').value,
+
+    anio:
+    document.getElementById('anio').value,
+
+    cilindrada:
+    document.getElementById('cilindrada').value,
+
+    km:
+    document.getElementById('km').value,
+
+    video:
+    document.getElementById('video').value,
+
+    descripcion:
+    document.getElementById('descripcion').value,
+
+    fotos:
+    document.getElementById('fotos')
+    .value
+    .split(',')
+    .map(x=>x.trim())
+    .filter(Boolean)
+
+  };
+
+  if(editingId){
+
+    await db
+      .from('motores')
+      .update(motor)
+      .eq('id',editingId);
+
+  } else {
+
+    await db
+      .from('motores')
+      .insert([motor]);
+
+  }
+
+  limpiar();
+
+  cargarMotores();
+}
+
+/* ========================================= */
+
+async function eliminar(id){
+
+  const ok = confirm(
+    '¿Eliminar motor?'
+  );
+
+  if(!ok) return;
+
+  await db
+    .from('motores')
+    .delete()
+    .eq('id',id);
+
+  cargarMotores();
+}
+
+/* ========================================= */
+
+</script>
+
+</body>
+</html>
