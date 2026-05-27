@@ -1,628 +1,246 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Desbalizar S.A. - Motores</title>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-<title>DESBALIZAR S.A</title>
+  <style>
+    *{
+      margin:0;
+      padding:0;
+      box-sizing:border-box;
+      font-family:Arial, sans-serif;
+    }
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    body{
+      background:#f4f4f4;
+      color:#222;
+    }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    header{
+      background:#0B3C78;
+      color:white;
+      padding:20px;
+      text-align:center;
+    }
 
-<style>
+    .filtros{
+      padding:20px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:center;
+    }
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-}
+    .filtros input{
+      padding:10px;
+      border:1px solid #ccc;
+      border-radius:8px;
+      width:220px;
+    }
 
-:root{
-  --bg:#f5f5f3;
-  --white:#ffffff;
-  --black:#111827;
-  --gray:#6b7280;
-  --border:#e5e7eb;
-  --accent:#d4a017;
-  --green:#25d366;
-}
+    .contenedor{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:20px;
+      padding:20px;
+    }
 
-body{
-  font-family:'Inter',sans-serif;
-  background:var(--bg);
-  color:var(--black);
-}
+    .card{
+      background:white;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 2px 10px rgba(0,0,0,0.1);
+    }
 
-/* NAV */
+    .card img{
+      width:100%;
+      height:240px;
+      object-fit:cover;
+    }
 
-nav{
-  background:white;
-  border-bottom:1px solid var(--border);
-  padding:18px 28px;
-  position:sticky;
-  top:0;
-  z-index:100;
-}
+    .contenido{
+      padding:15px;
+    }
 
-.nav-wrap{
-  max-width:1400px;
-  margin:auto;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
+    .contenido h2{
+      margin-bottom:10px;
+      color:#0B3C78;
+    }
 
-.logo{
-  font-size:32px;
-  font-weight:800;
-  letter-spacing:-1px;
-}
+    .contenido p{
+      margin-bottom:8px;
+      font-size:14px;
+    }
 
-.logo span{
-  color:var(--accent);
-}
+    .btn{
+      display:inline-block;
+      margin-top:10px;
+      background:#25D366;
+      color:white;
+      text-decoration:none;
+      padding:10px 15px;
+      border-radius:8px;
+      font-weight:bold;
+    }
 
-/* HERO */
-
-.hero{
-  max-width:1400px;
-  margin:auto;
-  padding:60px 28px 30px;
-}
-
-.hero h1{
-  font-size:64px;
-  line-height:1;
-  margin-bottom:16px;
-}
-
-.hero p{
-  max-width:650px;
-  color:var(--gray);
-  font-size:16px;
-}
-
-/* FILTERS */
-
-.filters{
-  max-width:1400px;
-  margin:auto;
-  padding:0 28px 30px;
-  display:flex;
-  gap:12px;
-  flex-wrap:wrap;
-}
-
-.search{
-  flex:1;
-  min-width:260px;
-}
-
-.search input{
-  width:100%;
-  height:52px;
-  border-radius:14px;
-  border:1px solid var(--border);
-  background:white;
-  padding:0 18px;
-  font-size:15px;
-}
-
-.filter-btn{
-  height:52px;
-  border:none;
-  border-radius:14px;
-  background:white;
-  border:1px solid var(--border);
-  padding:0 20px;
-  cursor:pointer;
-  font-weight:700;
-}
-
-.filter-btn.active{
-  background:var(--accent);
-  border-color:var(--accent);
-  color:white;
-}
-
-/* GRID */
-
-.grid{
-  max-width:1400px;
-  margin:auto;
-  padding:0 28px 60px;
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(360px,1fr));
-  gap:24px;
-}
-
-/* CARD */
-
-.card{
-  background:white;
-  border-radius:24px;
-  overflow:hidden;
-  border:1px solid var(--border);
-  transition:.25s;
-}
-
-.card:hover{
-  transform:translateY(-5px);
-  box-shadow:0 20px 50px rgba(0,0,0,.08);
-}
-
-.media{
-  position:relative;
-  height:270px;
-  background:#ddd;
-  overflow:hidden;
-}
-
-.media img,
-.media video{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-.badge{
-  position:absolute;
-  top:14px;
-  left:14px;
-  background:white;
-  padding:8px 14px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-}
-
-.card-body{
-  padding:22px;
-}
-
-.card-title{
-  font-size:30px;
-  font-weight:800;
-  line-height:1;
-  margin-bottom:10px;
-}
-
-.card-sub{
-  color:var(--gray);
-  margin-bottom:18px;
-}
-
-.tags{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-bottom:18px;
-}
-
-.tag{
-  background:#f3f4f6;
-  padding:8px 12px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-}
-
-.gallery{
-  display:flex;
-  gap:8px;
-  overflow:auto;
-  margin-bottom:18px;
-}
-
-.gallery img{
-  width:75px;
-  height:75px;
-  object-fit:cover;
-  border-radius:12px;
-  cursor:pointer;
-  border:2px solid transparent;
-}
-
-.gallery img:hover{
-  border-color:var(--accent);
-}
-
-.desc{
-  color:var(--gray);
-  line-height:1.6;
-  font-size:14px;
-  margin-bottom:22px;
-}
-
-.wa-btn{
-  width:100%;
-  height:54px;
-  border:none;
-  border-radius:14px;
-  background:var(--green);
-  color:white;
-  font-size:15px;
-  font-weight:700;
-  cursor:pointer;
-}
-
-.empty{
-  grid-column:1/-1;
-  text-align:center;
-  padding:120px 20px;
-  color:var(--gray);
-}
-
-.loading{
-  grid-column:1/-1;
-  text-align:center;
-  padding:120px 20px;
-  color:var(--gray);
-  font-size:18px;
-}
-
-.error{
-  background:#fee2e2;
-  color:#991b1b;
-  padding:20px;
-  border-radius:14px;
-  margin:20px;
-}
-
-@media(max-width:700px){
-
-  .hero h1{
-    font-size:42px;
-  }
-
-  .grid{
-    grid-template-columns:1fr;
-  }
-
-}
-
-</style>
+    .sin-resultados{
+      text-align:center;
+      padding:40px;
+      font-size:18px;
+    }
+  </style>
 </head>
-
 <body>
 
-<nav>
-  <div class="nav-wrap">
-    <div class="logo">
-      DESBALIZAR <span>S.A</span>
-    </div>
-  </div>
-</nav>
+<header>
+  <h1>DESBALIZAR S.A.</h1>
+  <p>Catálogo de motores</p>
+</header>
 
-<section class="hero">
+<div class="filtros">
+  <input type="text" id="filtroMarca" placeholder="Buscar marca">
+  <input type="text" id="filtroModelo" placeholder="Buscar modelo">
+</div>
 
-  <h1>
-    CATÁLOGO DE<br>
-    MOTORES USADOS
-  </h1>
-
-  <p>
-    Consultá disponibilidad y precio directamente por WhatsApp.
-  </p>
-
-</section>
-
-<section class="filters">
-
-  <div class="search">
-    <input
-      type="text"
-      id="search"
-      placeholder="Buscar Toyota, Volkswagen, Fiat..."
-      oninput="renderMotores()"
-    >
-  </div>
-
-  <button class="filter-btn active" onclick="setFilter('todos',this)">
-    Todos
-  </button>
-
-  <button class="filter-btn" onclick="setFilter('Bueno',this)">
-    Bueno
-  </button>
-
-  <button class="filter-btn" onclick="setFilter('Regular',this)">
-    Regular
-  </button>
-
-  <button class="filter-btn" onclick="setFilter('Para reparar',this)">
-    Para reparar
-  </button>
-
-</section>
-
-<section class="grid" id="grid">
-
-  <div class="loading">
-    Cargando catálogo...
-  </div>
-
-</section>
+<div class="contenedor" id="contenedorMotores"></div>
 
 <script>
 
-/* =========================================
-   CONFIG
-========================================= */
+  // ==========================
+  // SUPABASE
+  // ==========================
 
-const SUPABASE_URL = 'https://okjroggxyvwmlvowdldo.supabase.co';
+  const SUPABASE_URL = "TU_URL_SUPABASE";
+  const SUPABASE_KEY = "TU_ANON_KEY";
 
-const SUPABASE_KEY =
-'sb_publishable_0K7PsSnXVWgiiQGbHk5-Vw_UF45s5la';
+  const supabaseClient = supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
-const WA = '542314545224';
+  // ==========================
+  // CARGAR MOTORES
+  // ==========================
 
-/* =========================================
-   SUPABASE
-========================================= */
+  async function cargarMotores() {
 
-const db = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
+    const contenedor = document.getElementById("contenedorMotores");
 
-/* =========================================
-   VARIABLES
-========================================= */
+    contenedor.innerHTML = "<p>Cargando motores...</p>";
 
-let motores = [];
-let currentFilter = 'todos';
-
-/* =========================================
-   FILTROS
-========================================= */
-
-function setFilter(filter,btn){
-
-  currentFilter = filter;
-
-  document.querySelectorAll('.filter-btn').forEach(b=>{
-    b.classList.remove('active');
-  });
-
-  btn.classList.add('active');
-
-  renderMotores();
-}
-
-/* =========================================
-   WHATSAPP
-========================================= */
-
-function waLink(motor){
-
-  const txt =
-  `Hola! Consulto por el motor ${motor.marca || ''} ${motor.anio || ''}`;
-
-  return `https://wa.me/${WA}?text=${encodeURIComponent(txt)}`;
-}
-
-/* =========================================
-   CAMBIAR IMAGEN
-========================================= */
-
-function changeImage(index,url){
-
-  const img = document.getElementById('main-'+index);
-
-  if(img){
-    img.src = url;
-  }
-}
-
-/* =========================================
-   CARGAR MOTORES
-========================================= */
-
-async function cargarMotores(){
-
-  try{
-
-    const { data, error } = await db
-      .from('motores')
-      .select('*')
-      .order('id',{ ascending:false });
+    const { data, error } = await supabaseClient
+      .from("motores")
+      .select("*")
+      .order("id", { ascending:false });
 
     if(error){
-
       console.error(error);
-
-      document.getElementById('grid').innerHTML = `
-        <div class="error">
-          Error cargando motores.<br><br>
-
-          Revisá:
-          <br><br>
-
-          - Que exista la tabla motores
-          <br>
-          - Que RLS esté apagado
-          <br>
-          - Que la API key sea correcta
+      contenedor.innerHTML = `
+        <div class="sin-resultados">
+          Error cargando motores
         </div>
       `;
-
       return;
     }
 
-    motores = data || [];
-
-    renderMotores();
-
-  }catch(err){
-
-    console.error(err);
-
-    document.getElementById('grid').innerHTML = `
-      <div class="error">
-        Error conectando con Supabase
-      </div>
-    `;
-  }
-}
-
-/* =========================================
-   RENDER
-========================================= */
-
-function renderMotores(){
-
-  const q = document
-    .getElementById('search')
-    .value
-    .toLowerCase();
-
-  const filtrados = motores.filter(m=>{
-
-    const matchFilter =
-      currentFilter === 'todos' ||
-      m.estado === currentFilter;
-
-    const matchSearch =
-      !q ||
-      `
-        ${m.marca || ''}
-        ${m.cilindrada || ''}
-        ${m.descripcion || ''}
-      `
-      .toLowerCase()
-      .includes(q);
-
-    return matchFilter && matchSearch;
-  });
-
-  const grid = document.getElementById('grid');
-
-  if(!filtrados.length){
-
-    grid.innerHTML = `
-      <div class="empty">
-        <h2>No hay motores cargados</h2>
-      </div>
-    `;
-
-    return;
+    mostrarMotores(data);
   }
 
-  grid.innerHTML = filtrados.map((m,index)=>`
+  // ==========================
+  // MOSTRAR
+  // ==========================
 
-    <div class="card">
+  function mostrarMotores(motores){
 
-      <div class="media">
+    const contenedor = document.getElementById("contenedorMotores");
 
-        ${
-          m.video
+    const marcaFiltro = document
+      .getElementById("filtroMarca")
+      .value
+      .toLowerCase();
 
-          ?
+    const modeloFiltro = document
+      .getElementById("filtroModelo")
+      .value
+      .toLowerCase();
 
-          `
-          <video controls>
-            <source src="${m.video}" type="video/mp4">
-          </video>
-          `
+    const filtrados = motores.filter(motor => {
 
-          :
+      const marca = motor.marca?.toLowerCase() || "";
+      const modelo = motor.modelo?.toLowerCase() || "";
 
-          `
-          <img
-            id="main-${index}"
-            src="${m.fotos?.[0] || ''}"
+      return (
+        marca.includes(marcaFiltro) &&
+        modelo.includes(modeloFiltro)
+      );
+    });
+
+    if(filtrados.length === 0){
+      contenedor.innerHTML = `
+        <div class="sin-resultados">
+          No hay motores disponibles
+        </div>
+      `;
+      return;
+    }
+
+    contenedor.innerHTML = "";
+
+    filtrados.forEach(motor => {
+
+      const imagen = motor.fotos?.length
+        ? motor.fotos[0]
+        : "https://placehold.co/600x400?text=Sin+Imagen";
+
+      const card = document.createElement("div");
+
+      card.classList.add("card");
+
+      card.innerHTML = `
+        <img src="${imagen}" alt="motor">
+
+        <div class="contenido">
+          <h2>${motor.marca} ${motor.modelo}</h2>
+
+          <p><strong>Año:</strong> ${motor.año}</p>
+
+          <p><strong>Cilindrada:</strong> ${motor.cilindrada}</p>
+
+          <p><strong>KM:</strong> ${motor.km}</p>
+
+          <p>${motor.descripcion || ""}</p>
+
+          <a 
+            class="btn"
+            target="_blank"
+            href="https://wa.me/549XXXXXXXXXX?text=Hola,%20consulto%20por%20el%20motor%20${motor.marca}%20${motor.modelo}"
           >
-          `
-        }
-
-        <div class="badge">
-          ${m.estado || 'Disponible'}
+            Consultar
+          </a>
         </div>
+      `;
 
-      </div>
+      contenedor.appendChild(card);
+    });
+  }
 
-      <div class="card-body">
+  // ==========================
+  // EVENTOS FILTROS
+  // ==========================
 
-        <div class="card-title">
-          ${m.marca || ''}
-        </div>
+  document
+    .getElementById("filtroMarca")
+    .addEventListener("input", cargarMotores);
 
-        <div class="card-sub">
-          ${m.anio || ''} · ${m.cilindrada || ''}
-        </div>
+  document
+    .getElementById("filtroModelo")
+    .addEventListener("input", cargarMotores);
 
-        <div class="tags">
-
-          ${
-            m.km
-            ?
-            `<div class="tag">${m.km}</div>`
-            :
-            ''
-          }
-
-          <div class="tag">
-            Disponible
-          </div>
-
-        </div>
-
-        ${
-          m.fotos?.length
-
-          ?
-
-          `
-          <div class="gallery">
-
-            ${m.fotos.map(f=>`
-
-              <img
-                src="${f}"
-                onclick="changeImage(${index},'${f}')"
-              >
-
-            `).join('')}
-
-          </div>
-          `
-
-          :
-
-          ''
-        }
-
-        <div class="desc">
-          ${m.descripcion || ''}
-        </div>
-
-        <a
-          href="${waLink(m)}"
-          target="_blank"
-        >
-
-          <button class="wa-btn">
-            Consultar por WhatsApp
-          </button>
-
-        </a>
-
-      </div>
-
-    </div>
-
-  `).join('');
-}
-
-/* =========================================
-   INIT
-========================================= */
-
-cargarMotores();
+  cargarMotores();
 
 </script>
 
