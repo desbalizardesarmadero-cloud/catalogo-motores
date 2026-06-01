@@ -10,21 +10,21 @@ export default async function handler(req, res) {
     if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
     const motores = await response.json();
 
-    // Campos exactos según Meta Automotive Inventory Ads
-    // image_link (no image, no image[0].url)
-    // address separado en addr1, city, region, country, postal_code como columnas propias
+    // CORRECCIONES vs versión anterior:
+    // 1. image_link → image  (Meta Automotive requiere exactamente "image")
+    // 2. addr1/city/region/country/postal_code → address (columna combinada que Meta requiere)
+    // 3. mileage.value / mileage.unit → mileage (formato "XXXX KM")
     const headers = [
       'id',
-      'vehicle_id', 
+      'vehicle_id',
       'title',
       'description',
       'url',
-      'image_link',
+      'image',          // ← era image_link, Meta rechaza ese nombre
       'make',
       'model',
       'year',
-      'mileage.value',
-      'mileage.unit',
+      'mileage',        // ← era mileage.value + mileage.unit separados
       'state_of_vehicle',
       'condition',
       'availability',
@@ -35,11 +35,7 @@ export default async function handler(req, res) {
       'price',
       'dealer_name',
       'dealer_id',
-      'addr1',
-      'city',
-      'region',
-      'country',
-      'postal_code'
+      'address',        // ← era addr1/city/region/country/postal_code separados
     ];
 
     const rows = motores.map((m) => {
@@ -53,6 +49,12 @@ export default async function handler(req, res) {
       const year = m.anio ? String(m.anio) : '2000';
       const desc = `Motor ${title} usado original con garantia de funcionamiento. Desbalizar S.A., Bolivar, Buenos Aires.`;
 
+      // address combinada: "calle, ciudad, provincia, país código-postal"
+      const address = 'Santiago del Estero 910, Bolivar, Buenos Aires, AR 6550';
+
+      // mileage combinado: "XXXX KM"
+      const mileage = `${km} KM`;
+
       return [
         m.id,
         m.id,
@@ -63,8 +65,7 @@ export default async function handler(req, res) {
         m.marca || '',
         m.modelo || '',
         year,
-        km,
-        'KM',
+        mileage,
         'used',
         'GOOD',
         'available',
@@ -75,11 +76,7 @@ export default async function handler(req, res) {
         '1 ARS',
         'Desbalizar S.A.',
         'desbalizar-001',
-        'Santiago del Estero 910',
-        'Bolivar',
-        'Buenos Aires',
-        'AR',
-        '6550'
+        address,
       ].map(v => String(v == null ? '' : v).replace(/\t/g, ' ').replace(/\n/g, ' ')).join('\t');
     });
 
