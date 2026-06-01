@@ -26,8 +26,7 @@ export default async function handler(req, res) {
       'state_of_vehicle', 'condition', 'availability',
       'vehicle_type', 'body_style', 'drivetrain',
       'transmission', 'fuel_type', 'exterior_color',
-      'price',
-      'street_address', 'city', 'region', 'country', 'postal_code'
+      'price', 'address'
     ];
 
     const rows = motores.map((m) => {
@@ -54,21 +53,17 @@ export default async function handler(req, res) {
         m.modelo || 'OTHER',
         year,
         mileageValue, 'KM',
-        'used',       // state_of_vehicle
-        'GOOD',       // condition
-        'available',  // availability
-        'CAR_TRUCK',  // vehicle_type
-        'OTHER',      // body_style
-        'OTHER',      // drivetrain
-        'OTHER',      // transmission
-        'GASOLINE',   // fuel_type
-        'OTHER',      // exterior_color
-        '1 ARS',      // price
-        'Santiago del Estero 910', // street_address
-        'Bolivar',                 // city
-        'Buenos Aires',            // region
-        'AR',                      // country
-        '7550',                    // postal_code
+        'used',
+        'GOOD',
+        'available',
+        'CAR_TRUCK',
+        'OTHER',
+        'OTHER',
+        'OTHER',
+        'GASOLINE',
+        'OTHER',
+        '1 ARS',
+        'Santiago del Estero 910, Bolivar, Buenos Aires, AR, 6550',
       ].map(csvCell).join(',');
     });
 
