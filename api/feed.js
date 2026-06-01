@@ -7,7 +7,7 @@ const DIRECCION = JSON.stringify({
   city: "Bolivar",
   region: "Buenos Aires",
   country: "AR",
-  postal_code: "7550"
+  postal_code: "6550"
 });
 
 export default async function handler(req, res) {
