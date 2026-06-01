@@ -1,5 +1,5 @@
 // api/feed.js — Feed de vehículos para Meta Catalog
-// Formato XML listings que Meta acepta para catálogo de Vehículos
+// Campos requeridos según errores de Meta
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
 
       const title = [m.marca, m.modelo].filter(Boolean).join(' ') || 'Motor usado';
       const url = `https://catalogo-motores.vercel.app/motor.html?id=${m.id}`;
-      const mileage = m.kilometraje ? String(m.kilometraje).replace(/\D/g, '') : '0';
+      const mileageValue = m.kilometraje ? String(m.kilometraje).replace(/\D/g, '') : '0';
       const year = m.anio ? String(m.anio) : '2000';
       const desc = [
         m.marca && `Marca: ${m.marca}`,
@@ -40,15 +40,19 @@ export default async function handler(req, res) {
 
       return `  <listing>
     <id>${esc(String(m.id))}</id>
+    <vehicle_id>${esc(String(m.id))}</vehicle_id>
     <url>${esc(url)}</url>
     <title>${esc(title)}</title>
     <description>${esc(desc)}</description>
-    <image_url>${esc(imageUrl)}</image_url>
+    <image>${esc(imageUrl)}</image>
     <make>${esc(m.marca || 'Sin marca')}</make>
     <model>${esc(m.modelo || 'Sin modelo')}</model>
     <year>${esc(year)}</year>
-    <mileage>${mileage}</mileage>
-    <mileage_unit>KM</mileage_unit>
+    <mileage>
+      <value>${mileageValue}</value>
+      <unit>KM</unit>
+    </mileage>
+    <state_of_vehicle>used</state_of_vehicle>
     <condition>used</condition>
     <availability>available</availability>
     <vehicle_type>car</vehicle_type>
@@ -58,6 +62,13 @@ export default async function handler(req, res) {
     <fuel_type>gasoline</fuel_type>
     <exterior_color>Silver</exterior_color>
     <price>1 ARS</price>
+    <address>
+      <component name="addr1">Santiago del Estero 910</component>
+      <component name="city">Bolivar</component>
+      <component name="region">Buenos Aires</component>
+      <component name="country">AR</component>
+      <component name="postal_code">7550</component>
+    </address>
   </listing>`;
     }).join('\n');
 
