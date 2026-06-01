@@ -19,7 +19,6 @@ export default async function handler(req, res) {
 
     const motores = await response.json();
 
-    // Construir CSV con las columnas que Meta requiere para vehículos
     const headers = [
       'id', 'vehicle_id', 'url', 'title', 'description',
       'image[0].url', 'make', 'model', 'year',
@@ -52,10 +51,17 @@ export default async function handler(req, res) {
         m.id, m.id, url, title, desc,
         imageUrl, m.marca || '', m.modelo || '', year,
         mileageValue, 'KM',
-        'used', 'used', 'available',
-        'car', 'other', 'AWD',
-        'automatic', 'gasoline', 'Silver',
-        '1 ARS', 'Santiago del Estero 910', 'Bolivar',
+        'USED',       // state_of_vehicle
+        'GOOD',       // condition — valores válidos: EXCELLENT, VERY_GOOD, GOOD, FAIR, POOR, OTHER
+        'AVAILABLE',  // availability
+        'CAR_TRUCK',  // vehicle_type — valores válidos: CAR_TRUCK, MOTORCYCLE, COMMERCIAL, OTHER
+        'OTHER',      // body_style
+        'OTHER',      // drivetrain
+        'OTHER',      // transmission
+        'GASOLINE',   // fuel_type
+        'OTHER',      // exterior_color
+        '1 ARS',
+        'Santiago del Estero 910', 'Bolivar',
         'Buenos Aires', 'AR', '7550'
       ].map(csvCell).join(',');
     });
