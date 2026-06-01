@@ -15,14 +15,14 @@ export default async function handler(req, res) {
       'title',
       'description',
       'url',
-      'image_link',         // TSV usa image_link (no image, no array)
+      'image_link',
       'make',
       'model',
       'year',
-      'mileage',            // solo número entero, sin unidad
-      'state_of_vehicle',   // used / new
-      'condition',          // GOOD / EXCELLENT / FAIR / POOR
-      'availability',       // available / not available
+      'mileage',
+      'state_of_vehicle',
+      'condition',
+      'availability',
       'vehicle_type',
       'body_style',
       'transmission',
@@ -38,14 +38,18 @@ export default async function handler(req, res) {
     ];
 
     const rows = motores.map((m) => {
+      // fotos es un array JSON de URLs
       let img = '';
       if (Array.isArray(m.fotos) && m.fotos.length > 0) img = m.fotos[0] || '';
-      else if (typeof m.fotos === 'string') img = m.fotos || '';
+      else if (typeof m.fotos === 'string') {
+        try { const arr = JSON.parse(m.fotos); img = Array.isArray(arr) ? arr[0] : m.fotos; }
+        catch { img = m.fotos; }
+      }
 
       const title = [m.marca, m.modelo].filter(Boolean).join(' ') || 'Motor usado';
       const url = `https://catalogo-motores.vercel.app/motor.html?id=${m.id}`;
-      // mileage: número entero puro, sin texto ni unidad
-      const km = m.kilometraje ? parseInt(String(m.kilometraje).replace(/\D/g, ''), 10) || 0 : 0;
+      // ← campo correcto es "km", no "kilometraje"
+      const km = m.km ? parseInt(String(m.km).replace(/\D/g, ''), 10) || 1 : 1;
       const year = m.anio ? parseInt(String(m.anio), 10) : 2000;
       const desc = `Motor ${title} usado original con garantia de funcionamiento. Desbalizar S.A., Bolivar, Buenos Aires.`;
 
@@ -58,7 +62,7 @@ export default async function handler(req, res) {
         m.marca || '',
         m.modelo || '',
         year,
-        km,               // número entero, ej: 150000
+        km,
         'used',
         'GOOD',
         'available',
