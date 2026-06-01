@@ -1,4 +1,5 @@
 // api/feed.js — Feed de vehículos para Meta Catalog
+// XML listings con address estructurado
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
@@ -19,17 +20,7 @@ export default async function handler(req, res) {
 
     const motores = await response.json();
 
-    const headers = [
-      'id', 'vehicle_id', 'url', 'title', 'description',
-      'image[0].url', 'make', 'model', 'year',
-      'mileage.value', 'mileage.unit',
-      'state_of_vehicle', 'condition', 'availability',
-      'vehicle_type', 'body_style', 'drivetrain',
-      'transmission', 'fuel_type', 'exterior_color',
-      'price', 'address'
-    ];
-
-    const rows = motores.map((m) => {
+    const items = motores.map((m) => {
       let imageUrl = '';
       if (Array.isArray(m.fotos) && m.fotos.length > 0) imageUrl = m.fotos[0];
       else if (typeof m.fotos === 'string' && m.fotos) imageUrl = m.fotos;
@@ -46,42 +37,60 @@ export default async function handler(req, res) {
         'Motor usado original con garantia. Desbalizar S.A. Bolivar Bs.As.',
       ].filter(Boolean).join(' | ');
 
-      return [
-        m.id, m.id, url, title, desc,
-        imageUrl,
-        m.marca || 'OTHER',
-        m.modelo || 'OTHER',
-        year,
-        mileageValue, 'KM',
-        'used',
-        'GOOD',
-        'available',
-        'CAR_TRUCK',
-        'OTHER',
-        'OTHER',
-        'OTHER',
-        'GASOLINE',
-        'OTHER',
-        '1 ARS',
-        'Santiago del Estero 910, Bolivar, Buenos Aires, AR, 6550',
-      ].map(csvCell).join(',');
-    });
+      return `  <listing>
+    <id>${esc(String(m.id))}</id>
+    <vehicle_id>${esc(String(m.id))}</vehicle_id>
+    <url>${esc(url)}</url>
+    <title>${esc(title)}</title>
+    <description>${esc(desc)}</description>
+    <image>${esc(imageUrl)}</image>
+    <make>${esc(m.marca || 'OTHER')}</make>
+    <model>${esc(m.modelo || 'OTHER')}</model>
+    <year>${esc(year)}</year>
+    <mileage>
+      <value>${mileageValue}</value>
+      <unit>KM</unit>
+    </mileage>
+    <state_of_vehicle>used</state_of_vehicle>
+    <condition>GOOD</condition>
+    <availability>available</availability>
+    <vehicle_type>CAR_TRUCK</vehicle_type>
+    <body_style>OTHER</body_style>
+    <drivetrain>OTHER</drivetrain>
+    <transmission>OTHER</transmission>
+    <fuel_type>GASOLINE</fuel_type>
+    <exterior_color>OTHER</exterior_color>
+    <price>1 ARS</price>
+    <address>
+      <component name="addr1">Santiago del Estero 910</component>
+      <component name="city">Bolivar</component>
+      <component name="region">Buenos Aires</component>
+      <component name="country">AR</component>
+      <component name="postal_code">6550</component>
+    </address>
+  </listing>`;
+    }).join('\n');
 
-    const csv = [headers.join(','), ...rows].join('\n');
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<listings>
+  <title>Desbalizar S.A. - Motores usados</title>
+  <link rel="self" href="https://catalogo-motores.vercel.app/api/feed"/>
+${items}
+</listings>`;
 
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Type', 'text/xml; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.status(200).send(csv);
+    res.status(200).send(xml);
   } catch (err) {
     console.error('Feed error:', err);
     res.status(500).json({ error: err.message });
   }
 }
 
-function csvCell(val) {
-  const str = String(val == null ? '' : val);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-    return '"' + str.replace(/"/g, '""') + '"';
-  }
-  return str;
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
