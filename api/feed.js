@@ -27,7 +27,7 @@ export default async function handler(req, res) {
       'vehicle_type', 'body_style', 'drivetrain',
       'transmission', 'fuel_type', 'exterior_color',
       'price',
-      'latitude', 'longitude'
+      'street_address', 'city', 'region', 'country', 'postal_code'
     ];
 
     const rows = motores.map((m) => {
@@ -64,8 +64,11 @@ export default async function handler(req, res) {
         'GASOLINE',   // fuel_type
         'OTHER',      // exterior_color
         '1 ARS',      // price
-        '-36.8969',   // latitude  (Bolívar, Buenos Aires)
-        '-60.0108',   // longitude
+        'Santiago del Estero 910', // street_address
+        'Bolivar',                 // city
+        'Buenos Aires',            // region
+        'AR',                      // country
+        '7550',                    // postal_code
       ].map(csvCell).join(',');
     });
 
