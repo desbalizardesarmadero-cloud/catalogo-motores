@@ -11,26 +11,16 @@ export default async function handler(req, res) {
     const motores = await response.json();
 
     const headers = [
-      'vehicle_id',
+      'id',
+      'retailer_id',
       'title',
       'description',
-      'url',
-      'image',          // Meta requiere "image", no "image_link"
-      'make',
-      'model',
-      'year',
-      'mileage',        // número entero puro
-      'state_of_vehicle',
-      'condition',
-      'availability',
-      'vehicle_type',
-      'body_style',
-      'transmission',
-      'fuel_type',
+      'link',
+      'image_link',
       'price',
-      'dealer_name',
-      'dealer_id',
-      'address',        // Meta requiere "address" combinado, no addr1/city/etc separados
+      'availability',
+      'condition',
+      'brand',
     ];
 
     const rows = motores.map((m) => {
@@ -42,33 +32,21 @@ export default async function handler(req, res) {
       }
 
       const title = [m.marca, m.modelo].filter(Boolean).join(' ') || 'Motor usado';
-      const url = `https://catalogo-motores.vercel.app/motor.html?id=${m.id}`;
-      const km = m.km ? parseInt(String(m.km).replace(/\D/g, ''), 10) || 1 : 1;
-      const year = m.anio ? parseInt(String(m.anio), 10) : 2000;
+      const link = `https://catalogo-motores.vercel.app/motor.html?id=${m.id}`;
       const desc = `Motor ${title} usado original con garantia de funcionamiento. Desbalizar S.A., Bolivar, Buenos Aires.`;
-      const address = 'Santiago del Estero 910, Bolivar, Buenos Aires, AR 6550';
+      const id = `motor-${m.id}`;
 
       return [
-        m.id,
+        id,
+        id,
         title,
         desc,
-        url,
+        link,
         img,
-        m.marca || '',
-        m.modelo || '',
-        year,
-        km,
-        'used',
-        'GOOD',
-        'available',
-        'CAR_TRUCK',
-        'OTHER',
-        'OTHER',
-        'GASOLINE',
         '1 ARS',
-        'Desbalizar S.A.',
-        'desbalizar-001',
-        address,
+        'in stock',
+        'used',
+        m.marca || 'Desbalizar',
       ].map(v => String(v == null ? '' : v).replace(/\t/g, ' ').replace(/\n/g, ' ')).join('\t');
     });
 
