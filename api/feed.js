@@ -10,80 +10,54 @@ export default async function handler(req, res) {
     if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
     const motores = await response.json();
 
-    // CORRECCIONES vs versión anterior:
-    // 1. image_link → image  (Meta Automotive requiere exactamente "image")
-    // 2. addr1/city/region/country/postal_code → address (columna combinada que Meta requiere)
-    // 3. mileage.value / mileage.unit → mileage (formato "XXXX KM")
-    const headers = [
-      'id',
-      'vehicle_id',
-      'title',
-      'description',
-      'url',
-      'image',          // ← era image_link, Meta rechaza ese nombre
-      'make',
-      'model',
-      'year',
-      'mileage',        // ← era mileage.value + mileage.unit separados
-      'state_of_vehicle',
-      'condition',
-      'availability',
-      'vehicle_type',
-      'body_style',
-      'transmission',
-      'fuel_type',
-      'price',
-      'dealer_name',
-      'dealer_id',
-      'address',        // ← era addr1/city/region/country/postal_code separados
-    ];
-
-    const rows = motores.map((m) => {
-      let img = '';
-      if (Array.isArray(m.fotos) && m.fotos.length > 0) img = m.fotos[0] || '';
-      else if (typeof m.fotos === 'string') img = m.fotos || '';
+    const data = motores.map((m) => {
+      // Imagen: Meta espera un array de objetos { url, tag }
+      let imageUrl = '';
+      if (Array.isArray(m.fotos) && m.fotos.length > 0) imageUrl = m.fotos[0] || '';
+      else if (typeof m.fotos === 'string') imageUrl = m.fotos || '';
 
       const title = [m.marca, m.modelo].filter(Boolean).join(' ') || 'Motor usado';
       const url = `https://catalogo-motores.vercel.app/motor.html?id=${m.id}`;
-      const km = m.kilometraje ? String(m.kilometraje).replace(/\D/g, '') || '1' : '1';
-      const year = m.anio ? String(m.anio) : '2000';
+      const km = m.kilometraje ? parseInt(String(m.kilometraje).replace(/\D/g, ''), 10) || 1 : 1;
+      const year = m.anio ? parseInt(String(m.anio), 10) : 2000;
       const desc = `Motor ${title} usado original con garantia de funcionamiento. Desbalizar S.A., Bolivar, Buenos Aires.`;
 
-      // address combinada: "calle, ciudad, provincia, país código-postal"
-      const address = 'Santiago del Estero 910, Bolivar, Buenos Aires, AR 6550';
-
-      // mileage combinado: "XXXX KM"
-      const mileage = `${km} KM`;
-
-      return [
-        m.id,
-        m.id,
+      return {
+        vehicle_id: String(m.id),
         title,
-        desc,
+        description: desc,
         url,
-        img,
-        m.marca || '',
-        m.modelo || '',
+        // image: array de objetos — formato obligatorio de Meta para catálogo de vehículos
+        image: [{ url: imageUrl, tag: ['Car'] }],
+        make: m.marca || '',
+        model: m.modelo || '',
         year,
-        mileage,
-        'used',
-        'GOOD',
-        'available',
-        'CAR_TRUCK',
-        'OTHER',
-        'OTHER',
-        'GASOLINE',
-        '1 ARS',
-        'Desbalizar S.A.',
-        'desbalizar-001',
-        address,
-      ].map(v => String(v == null ? '' : v).replace(/\t/g, ' ').replace(/\n/g, ' ')).join('\t');
+        // mileage: objeto con value (número) y unit — formato obligatorio de Meta
+        mileage: { value: km, unit: 'KM' },
+        state_of_vehicle: 'used',
+        condition: 'GOOD',
+        availability: 'AVAILABLE',
+        vehicle_type: 'CAR_TRUCK',
+        body_style: 'OTHER',
+        transmission: 'OTHER',
+        fuel_type: 'GASOLINE',
+        price: '1 ARS',
+        dealer_name: 'Desbalizar S.A.',
+        dealer_id: 'desbalizar-001',
+        // address: objeto con campos separados — formato obligatorio de Meta
+        address: {
+          addr1: 'Santiago del Estero 910',
+          city: 'Bolivar',
+          region: 'Buenos Aires',
+          country: 'AR',
+          postal_code: '6550',
+        },
+      };
     });
 
-    const tsv = [headers.join('\t'), ...rows].join('\n');
-    res.setHeader('Content-Type', 'text/tab-separated-values; charset=utf-8');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.status(200).send(tsv);
+    res.status(200).json({ data });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
