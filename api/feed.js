@@ -27,8 +27,7 @@ export default async function handler(req, res) {
       'vehicle_type', 'body_style', 'drivetrain',
       'transmission', 'fuel_type', 'exterior_color',
       'price',
-      'address[0].addr1', 'address[0].city',
-      'address[0].region', 'address[0].country', 'address[0].postal_code'
+      'latitude', 'longitude'
     ];
 
     const rows = motores.map((m) => {
@@ -49,32 +48,24 @@ export default async function handler(req, res) {
       ].filter(Boolean).join(' | ');
 
       return [
-        m.id,
-        m.id,
-        url,
-        title,
-        desc,
+        m.id, m.id, url, title, desc,
         imageUrl,
         m.marca || 'OTHER',
         m.modelo || 'OTHER',
         year,
-        mileageValue,
-        'KM',           // mileage.unit
-        'used',         // state_of_vehicle: new | used | cpo (minúsculas)
-        'GOOD',         // condition: EXCELLENT|VERY_GOOD|GOOD|FAIR|POOR|OTHER
-        'available',    // availability: available | not available (minúsculas)
-        'CAR_TRUCK',    // vehicle_type: CAR_TRUCK|MOTORCYCLE|COMMERCIAL|OTHER
-        'OTHER',        // body_style
-        'OTHER',        // drivetrain
-        'OTHER',        // transmission
-        'GASOLINE',     // fuel_type
-        'OTHER',        // exterior_color
-        '1 ARS',        // price
-        'Santiago del Estero 910',
-        'Bolivar',
-        'Buenos Aires',
-        'AR',
-        '7550'
+        mileageValue, 'KM',
+        'used',       // state_of_vehicle
+        'GOOD',       // condition
+        'available',  // availability
+        'CAR_TRUCK',  // vehicle_type
+        'OTHER',      // body_style
+        'OTHER',      // drivetrain
+        'OTHER',      // transmission
+        'GASOLINE',   // fuel_type
+        'OTHER',      // exterior_color
+        '1 ARS',      // price
+        '-36.8969',   // latitude  (Bolívar, Buenos Aires)
+        '-60.0108',   // longitude
       ].map(csvCell).join(',');
     });
 
