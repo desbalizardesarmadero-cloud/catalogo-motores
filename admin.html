@@ -1300,7 +1300,6 @@
     canvas.height = H;
     const ctx = canvas.getContext("2d");
 
-    /* ── Cargar imagen helper ── */
     async function cargarImg(url) {
       return new Promise(res => {
         if (!url) { res(null); return; }
@@ -1308,7 +1307,7 @@
         img.crossOrigin = "anonymous";
         img.onload  = () => res(img);
         img.onerror = () => res(null);
-        img.src = url;
+        img.src = url + (url.includes("?") ? "&" : "?") + "t=" + Date.now();
       });
     }
 
@@ -1316,7 +1315,16 @@
       if (!img) { ctx.fillStyle = "#0E1220"; ctx.fillRect(x, y, w, h); return; }
       const scale = Math.max(w / img.width, h / img.height);
       const sw = img.width * scale, sh = img.height * scale;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
       ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
+      ctx.restore();
+    }
+
+    function grad(y0, y1, c0, c1) {
+      const g = ctx.createLinearGradient(0, y0, 0, y1);
+      g.addColorStop(0, c0); g.addColorStop(1, c1);
+      return g;
     }
 
     const [imgA, imgB, logoImg] = await Promise.all([
@@ -1325,117 +1333,99 @@
       cargarImg("https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg")
     ]);
 
-    /* ── Proporciones: 45% / 10% / 45% ── */
-    const fotoH = Math.round(H * 0.44);   // 844px
-    const fajH  = Math.round(H * 0.12);   // 230px
-    const fotoBY = fotoH + fajH;
-    const fotoBH = H - fotoBY;             // resto
+    /* ── ZONAS FIJAS ──
+       Foto arriba:  0    → 800   (800px)
+       Franja:       800  → 1120  (320px)
+       Foto abajo:   1120 → 1920  (800px)
+    */
+    const ZA_H = 800;
+    const ZF_Y = 800, ZF_H = 320;
+    const ZB_Y = 1120, ZB_H = 800;
 
-    /* ── FOTO ARRIBA ── */
-    ctx.save();
-    ctx.beginPath(); ctx.rect(0, 0, W, fotoH); ctx.clip();
-    drawCover(imgA, 0, 0, W, fotoH);
-    // oscurecer levemente para contraste
-    ctx.fillStyle = "rgba(0,0,0,0.15)";
-    ctx.fillRect(0, 0, W, fotoH);
-    // gradiente al fondo hacia la franja
-    const gA = ctx.createLinearGradient(0, fotoH - 200, 0, fotoH);
-    gA.addColorStop(0, "rgba(8,11,18,0)");
-    gA.addColorStop(1, "rgba(8,11,18,1)");
-    ctx.fillStyle = gA;
-    ctx.fillRect(0, fotoH - 200, W, 200);
-    ctx.restore();
+    /* ── Foto arriba ── */
+    drawCover(imgA, 0, 0, W, ZA_H);
+    // oscurecer sutilmente
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(0, 0, W, ZA_H);
+    // gradiente inferior largo
+    ctx.fillStyle = grad(ZA_H - 280, ZA_H, "rgba(5,7,12,0)", "rgba(5,7,12,1)");
+    ctx.fillRect(0, ZA_H - 280, W, 280);
 
-    /* ── FOTO ABAJO ── */
-    ctx.save();
-    ctx.beginPath(); ctx.rect(0, fotoBY, W, fotoBH); ctx.clip();
-    drawCover(imgB, 0, fotoBY, W, fotoBH);
-    ctx.fillStyle = "rgba(0,0,0,0.15)";
-    ctx.fillRect(0, fotoBY, W, fotoBH);
-    // gradiente arriba
-    const gB = ctx.createLinearGradient(0, fotoBY, 0, fotoBY + 200);
-    gB.addColorStop(0, "rgba(8,11,18,1)");
-    gB.addColorStop(1, "rgba(8,11,18,0)");
-    ctx.fillStyle = gB;
-    ctx.fillRect(0, fotoBY, W, 200);
-    ctx.restore();
+    /* ── Foto abajo ── */
+    drawCover(imgB, 0, ZB_Y, W, ZB_H);
+    ctx.fillStyle = "rgba(0,0,0,0.12)";
+    ctx.fillRect(0, ZB_Y, W, ZB_H);
+    // gradiente superior largo
+    ctx.fillStyle = grad(ZB_Y, ZB_Y + 280, "rgba(5,7,12,1)", "rgba(5,7,12,0)");
+    ctx.fillRect(0, ZB_Y, W, 280);
+    // firma abajo
+    ctx.fillStyle = "rgba(255,255,255,0.2)";
+    ctx.font = "400 22px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", W/2, H - 36);
 
-    /* ── FRANJA CENTRAL ── */
-    ctx.fillStyle = "#080B12";
-    ctx.fillRect(0, fotoH, W, fajH);
+    /* ── Franja oscura central ── */
+    ctx.fillStyle = "#05070C";
+    ctx.fillRect(0, ZF_Y, W, ZF_H);
 
-    /* Línea dorada top */
+    /* Líneas doradas borde */
     ctx.fillStyle = "#F0A500";
-    ctx.fillRect(0, fotoH, W, 3);
-    /* Línea dorada bottom */
-    ctx.fillStyle = "#F0A500";
-    ctx.fillRect(0, fotoBY - 3, W, 3);
+    ctx.fillRect(0, ZF_Y, W, 3);
+    ctx.fillRect(0, ZF_Y + ZF_H - 3, W, 3);
 
-    /* ── CONTENIDO FRANJA ── */
+    /* ── Contenido franja ── */
     const cx = W / 2;
-    const cy = fotoH + fajH / 2;
 
-    /* Logo redondo */
+    /* Logo */
     if (logoImg) {
-      const r = 44;
+      const r = 36;
+      const lx = cx, ly = ZF_Y + 42;
       ctx.save();
-      ctx.beginPath();
-      ctx.arc(cx, cy - 76, r, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(logoImg, cx - r, cy - 76 - r, r * 2, r * 2);
+      ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.clip();
+      ctx.drawImage(logoImg, lx - r, ly - r, r * 2, r * 2);
       ctx.restore();
-      // borde dorado al logo
-      ctx.beginPath();
-      ctx.arc(cx, cy - 76, r + 2, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(240,165,0,0.5)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
+      ctx.beginPath(); ctx.arc(lx, ly, r + 2, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(240,165,0,0.6)";
+      ctx.lineWidth = 2; ctx.stroke();
     }
 
     /* "INGRESO PARA DESARME" */
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
     ctx.fillStyle = "#F0A500";
-    ctx.font = "800 38px Impact, 'Arial Black', sans-serif";
-    ctx.letterSpacing = "4px";
-    ctx.fillText("INGRESO PARA DESARME", cx, cy + 14);
+    ctx.font = "700 46px 'Arial Black', Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.letterSpacing = "3px";
+    ctx.fillText("INGRESO PARA DESARME", cx, ZF_Y + 108);
 
-    /* Línea fina bajo el título */
-    ctx.fillStyle = "rgba(240,165,0,0.25)";
-    ctx.fillRect(cx - 220, cy + 36, 440, 1);
+    /* Separador */
+    ctx.fillStyle = "rgba(240,165,0,0.3)";
+    ctx.fillRect(cx - 200, ZF_Y + 122, 400, 1.5);
 
     /* Marca */
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.font = "600 30px Impact, 'Arial Black', sans-serif";
-    ctx.letterSpacing = "6px";
-    ctx.fillText((v.marca || "").toUpperCase(), cx, cy + 62);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.font = "400 32px Arial, sans-serif";
+    ctx.letterSpacing = "5px";
+    ctx.fillText((v.marca || "").toUpperCase(), cx, ZF_Y + 162);
 
-    /* Modelo — grande */
-    const modeloText = (v.modelo || "").toUpperCase();
+    /* Modelo — ajuste automático de tamaño */
+    const modeloTxt = (v.modelo || "").toUpperCase();
     ctx.fillStyle = "#FFFFFF";
-    ctx.letterSpacing = "2px";
-    let fSize = 80;
-    ctx.font = `900 ${fSize}px Impact, 'Arial Black', sans-serif`;
-    while (ctx.measureText(modeloText).width > W - 60 && fSize > 48) {
-      fSize -= 4;
-      ctx.font = `900 ${fSize}px Impact, 'Arial Black', sans-serif`;
+    ctx.letterSpacing = "1px";
+    let fs = 88;
+    ctx.font = `900 ${fs}px 'Arial Black', Arial, sans-serif`;
+    while (ctx.measureText(modeloTxt).width > W - 80 && fs > 52) {
+      fs -= 4;
+      ctx.font = `900 ${fs}px 'Arial Black', Arial, sans-serif`;
     }
-    ctx.fillText(modeloText, cx, cy + 112);
+    ctx.fillText(modeloTxt, cx, ZF_Y + 230);
 
-    /* Año · Km */
-    const specs = [v.anio, v.km ? Number(v.km).toLocaleString("es-AR") + " km" : null].filter(Boolean).join("  ·  ");
+    /* Año · Km — dentro de la franja */
+    const specs = [v.anio, v.km ? Number(v.km).toLocaleString("es-AR") + " km" : null].filter(Boolean).join("   ·   ");
     if (specs) {
-      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.fillStyle = "rgba(255,255,255,0.38)";
       ctx.font = "400 28px Arial, sans-serif";
       ctx.letterSpacing = "2px";
-      ctx.fillText(specs.toUpperCase(), cx, cy + 156);
+      ctx.fillText(specs.toUpperCase(), cx, ZF_Y + 285);
     }
-
-    /* ── FIRMA ABAJO ── */
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
-    ctx.font = "400 24px Arial, sans-serif";
-    ctx.letterSpacing = "3px";
-    ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BA", cx, H - 44);
 
     /* ── DESCARGAR ── */
     const nombre = `story_${(v.marca||"").toLowerCase()}_${(v.modelo||"").toLowerCase().replace(/\s+/g,"_")}.jpg`;
