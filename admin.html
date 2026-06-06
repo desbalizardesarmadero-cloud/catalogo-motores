@@ -1526,7 +1526,7 @@
         <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(v.observaciones)}">${esc(v.observaciones) || "—"}</td>
         <td>
           <div class="td-actions">
-            <button class="btn-story" onclick="abrirStory(${v.id})">📱 Story</button>
+            <button class="btn-story" onclick="window.open('/story?id=${v.id}','_blank')">📱 Story</button>
             <button class="btn-edit" onclick="editarVehiculo(${v.id})">Editar</button>
             <button class="btn-del" onclick="pedirEliminarV(${v.id})">Eliminar</button>
           </div>
