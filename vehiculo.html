@@ -214,10 +214,80 @@
     .img-viewer-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: background var(--transition); }
     .img-viewer-close:hover { background: rgba(255,255,255,0.2); }
 
+    /* MODAL PIEZA */
+    .pieza-modal {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .pieza-modal.open { display: flex; }
+    .pieza-box {
+      background: var(--dark-800);
+      border: 1px solid rgba(58,155,255,0.15);
+      border-radius: 20px; padding: 32px 28px;
+      width: 100%; max-width: 440px;
+      display: flex; flex-direction: column; gap: 20px;
+      animation: modalUp .25s ease;
+    }
+    @keyframes modalUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    .pieza-box-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px; font-weight: 800; text-transform: uppercase;
+      color: var(--white); line-height: 1;
+    }
+    .pieza-box-sub { font-size: 13px; color: var(--text-secondary); margin-top: -12px; line-height: 1.5; }
+
+    .pieza-vehiculo-info {
+      background: var(--dark-700); border-radius: 10px; padding: 12px 14px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    .pieza-vehiculo-info strong { color: var(--white); display: block; font-size: 15px; margin-bottom: 2px; }
+
+    .pieza-input {
+      width: 100%; padding: 14px 16px;
+      background: var(--dark-700); border: 1px solid rgba(58,155,255,0.2);
+      border-radius: 12px; color: var(--text-primary);
+      font-size: 15px; font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border-color var(--transition);
+    }
+    .pieza-input:focus { border-color: rgba(58,155,255,0.5); }
+    .pieza-input::placeholder { color: var(--text-muted); }
+
+    .pieza-sugerencias {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: -10px;
+    }
+    .pieza-chip {
+      padding: 5px 12px; border-radius: 99px;
+      background: var(--dark-700); border: 1px solid rgba(58,155,255,0.12);
+      font-size: 12px; color: var(--text-secondary);
+      cursor: pointer; transition: all var(--transition);
+    }
+    .pieza-chip:hover { background: rgba(58,155,255,0.1); border-color: rgba(58,155,255,0.35); color: var(--white); }
+
+    .pieza-actions { display: flex; gap: 10px; }
+    .pieza-btn-cancel {
+      padding: 13px 20px; border-radius: 10px;
+      background: var(--dark-700); border: 1px solid rgba(255,255,255,0.1);
+      font-size: 14px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; transition: all var(--transition); font-family: 'DM Sans', sans-serif;
+    }
+    .pieza-btn-cancel:hover { color: var(--white); }
+    .pieza-btn-wa {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 20px; border-radius: 10px;
+      background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
+      font-size: 15px; font-weight: 700; color: #fff;
+      cursor: pointer; transition: all var(--transition); font-family: 'DM Sans', sans-serif;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.3); border: none;
+    }
+    .pieza-btn-wa:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .pieza-btn-wa svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: var(--dark-900); }
     ::-webkit-scrollbar-thumb { background: var(--dark-500); border-radius: 3px; }
-  </style>
 </head>
 <body>
 
@@ -245,6 +315,31 @@
     <img id="img-viewer-img" src="" alt="Foto ampliada"/>
   </div>
 
+  <!-- MODAL PIEZA -->
+  <div class="pieza-modal" id="pieza-modal" onclick="clickFueraPieza(event)">
+    <div class="pieza-box">
+      <div>
+        <div class="pieza-box-title">¿Qué pieza buscás?</div>
+        <div class="pieza-box-sub">Tu consulta va a llegar con todos los datos del vehículo.</div>
+      </div>
+      <div class="pieza-vehiculo-info">
+        <strong id="modal-veh-nombre">—</strong>
+        <span id="modal-veh-anio"></span>
+      </div>
+      <input class="pieza-input" id="pieza-input" type="text"
+        placeholder="Ej: paragolpes delantero, puerta trasera…"
+        onkeydown="if(event.key==='Enter') enviarConsulta()"/>
+      <div class="pieza-sugerencias" id="pieza-sugerencias"></div>
+      <div class="pieza-actions">
+        <button class="pieza-btn-cancel" onclick="cerrarModalPieza()">Cancelar</button>
+        <button class="pieza-btn-wa" onclick="enviarConsulta()">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.541 4.063 1.487 5.776L.057 23.428a.5.5 0 0 0 .609.61l5.724-1.43A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.524-5.183-1.432l-.371-.22-3.849.962.979-3.773-.242-.386A9.961 9.961 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          Consultar por WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
   <footer class="site-footer">
     <div class="footer-inner">
       <div class="footer-logo">Desbalizar S.A.</div>
@@ -260,6 +355,8 @@
     const WA_NUM = "542314545224";
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let vehiculoActual = null; // guardamos el vehículo para el modal
 
     function esc(s) { return s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
     function fmtKm(n) { const v = Number(n); return isNaN(v)||n==null ? null : v.toLocaleString("es-AR") + " km"; }
@@ -288,6 +385,7 @@
     }
 
     function renderizar(v) {
+      vehiculoActual = v;
       fotosArr = Array.isArray(v.fotos) ? v.fotos.filter(Boolean) : [];
       const km = fmtKm(v.km);
       const waMsg = `Hola, vi el ${v.marca||""} ${v.modelo||""}${v.anio?" "+v.anio:""} en el catálogo de Desbalizar. ¿Qué piezas tienen disponibles?`;
@@ -357,11 +455,11 @@
         </div>
 
         <div class="wa-sticky">
-          <a href="${waUrl}" target="_blank" rel="noopener">
-            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.541 4.063 1.487 5.776L.057 23.428a.5.5 0 0 0 .609.61l5.724-1.43A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.524-5.183-1.432l-.371-.22-3.849.962.979-3.773-.242-.386A9.961 9.961 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          <button onclick="abrirModalPieza()" style="pointer-events:all;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:480px;padding:15px 20px;background:linear-gradient(135deg,#128C7E 0%,#25D366 100%);border-radius:14px;font-size:16px;font-weight:700;color:#fff;letter-spacing:.04em;box-shadow:0 8px 28px rgba(37,211,102,0.35);transition:all var(--transition);font-family:'DM Sans',sans-serif;border:none;cursor:pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.541 4.063 1.487 5.776L.057 23.428a.5.5 0 0 0 .609.61l5.724-1.43A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.524-5.183-1.432l-.371-.22-3.849.962.979-3.773-.242-.386A9.961 9.961 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
             Consultar disponibilidad por WhatsApp
-          </a>
-          <div class="wa-sticky-nota">Respondemos rápido con precio y disponibilidad</div>
+          </button>
+          <div class="wa-sticky-nota">Te preguntamos qué pieza buscás antes de abrir WhatsApp</div>
         </div>`;
     }
 
@@ -392,7 +490,67 @@
       }
     }
 
+    /* ── MODAL PIEZA ── */
+    const SUGERENCIAS = [
+      "Motor", "Caja de cambios", "Paragolpes delantero", "Paragolpes trasero",
+      "Puerta delantera", "Puerta trasera", "Capot", "Tapa de baúl",
+      "Alternador", "Burro de arranque", "Radiador", "Airbag",
+      "Tablero / torpedo", "Volante", "Compresor de aire", "Palier"
+    ];
+
+    function abrirModalPieza() {
+      if (!vehiculoActual) return;
+      const v = vehiculoActual;
+      document.getElementById("modal-veh-nombre").textContent =
+        `${v.marca || ""} ${v.modelo || ""}`.trim();
+      document.getElementById("modal-veh-anio").textContent =
+        v.anio ? `Año ${v.anio}` : "";
+
+      // Chips de sugerencias
+      const cont = document.getElementById("pieza-sugerencias");
+      cont.innerHTML = "";
+      SUGERENCIAS.forEach(s => {
+        const chip = document.createElement("button");
+        chip.className = "pieza-chip";
+        chip.textContent = s;
+        chip.onclick = () => {
+          document.getElementById("pieza-input").value = s;
+          document.getElementById("pieza-input").focus();
+        };
+        cont.appendChild(chip);
+      });
+
+      document.getElementById("pieza-input").value = "";
+      document.getElementById("pieza-modal").classList.add("open");
+      setTimeout(() => document.getElementById("pieza-input").focus(), 200);
+    }
+
+    function cerrarModalPieza() {
+      document.getElementById("pieza-modal").classList.remove("open");
+    }
+
+    function clickFueraPieza(e) {
+      if (e.target === document.getElementById("pieza-modal")) cerrarModalPieza();
+    }
+
+    function enviarConsulta() {
+      if (!vehiculoActual) return;
+      const v = vehiculoActual;
+      const pieza = document.getElementById("pieza-input").value.trim();
+      let msg = `Hola, vi el ${v.marca||""} ${v.modelo||""}${v.anio?" ("+v.anio+")":""} en el catálogo de Desbalizar.`;
+      if (pieza) {
+        msg += ` Estoy buscando: *${pieza}*. ¿Lo tienen disponible?`;
+      } else {
+        msg += ` ¿Qué piezas tienen disponibles?`;
+      }
+      window.open(`https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`, "_blank");
+      cerrarModalPieza();
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") { cerrarModalPieza(); cerrarViewer(); }
+    });
+
     cargar();
-  </script>
 </body>
 </html>
