@@ -13,12 +13,10 @@
     .top-bar a { font-size: 13px; color: #3A9BFF; text-decoration: none; display: flex; align-items: center; gap: 5px; }
     .top-bar a svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
     .top-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; text-transform: uppercase; color: #fff; }
-
     .controls { width: 100%; max-width: 480px; background: #0D1420; border: 1px solid rgba(58,155,255,0.1); border-radius: 16px; padding: 18px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 14px; }
     .ctrl-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #4A6080; margin-bottom: 5px; }
     .ctrl-veh { font-size: 16px; font-weight: 600; color: #fff; }
     .ctrl-datos { font-size: 13px; color: #8A9CB8; margin-top: 2px; }
-
     .fotos-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .foto-slot { background: #111926; border: 1.5px solid rgba(255,255,255,0.06); border-radius: 10px; aspect-ratio: 4/3; overflow: hidden; position: relative; cursor: pointer; transition: border-color .2s; }
     .foto-slot:hover { border-color: rgba(58,155,255,0.4); }
@@ -27,11 +25,9 @@
     .foto-slot-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 5px; color: #3A5070; font-size: 11px; }
     .foto-slot-empty svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; }
     .hint { font-size: 12px; color: #3A5070; text-align: center; }
-
-    .btn-download { width: 100%; max-width: 480px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, #0C3C6E, #1554A8, #2E85E8); color: #fff; font-size: 16px; font-weight: 600; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: filter .2s; margin-bottom: 28px; box-shadow: 0 8px 28px rgba(21,84,168,0.35); letter-spacing: 0.02em; }
+    .btn-download { width: 100%; max-width: 480px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, #0C3C6E, #1554A8, #2E85E8); color: #fff; font-size: 16px; font-weight: 600; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: filter .2s; margin-bottom: 28px; box-shadow: 0 8px 28px rgba(21,84,168,0.35); }
     .btn-download:hover { filter: brightness(1.12); }
     .btn-download:disabled { opacity: .45; cursor: not-allowed; }
-
     .preview-wrap { width: 100%; max-width: 320px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(58,155,255,0.15); box-shadow: 0 24px 64px rgba(0,0,0,0.8); }
     .preview-wrap canvas { width: 100%; display: block; }
     #loading { text-align: center; color: #3A5070; font-size: 13px; padding: 40px; background: #0D1420; }
@@ -44,7 +40,7 @@
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
       Volver al admin
     </a>
-    <div class="top-title">📱 Story</div>
+    <div class="top-title">Story</div>
   </div>
 
   <div class="controls">
@@ -123,11 +119,7 @@
     }
 
     function cover(ctx, img, x, y, w, h) {
-      if (!img) {
-        ctx.fillStyle = "#08111E";
-        ctx.fillRect(x, y, w, h);
-        return;
-      }
+      if (!img) { ctx.fillStyle = "#08111E"; ctx.fillRect(x, y, w, h); return; }
       const s = Math.max(w / img.width, h / img.height);
       const sw = img.width * s, sh = img.height * s;
       ctx.save();
@@ -143,16 +135,34 @@
       ctx.fillRect(x, y, w, h);
     }
 
-    function roundRect(ctx, x, y, w, h, r, fill, stroke, lw) {
+    function pill(ctx, cx, y, h, text, font, fontSize, letterSpacing, dotColor, fillColor, strokeColor) {
+      ctx.font = `600 ${fontSize}px ${font}`;
+      ctx.letterSpacing = letterSpacing + "px";
+      const tw = ctx.measureText(text).width;
+      ctx.letterSpacing = "0px";
+      const pad = 72, dotW = 28;
+      const w = tw + pad + dotW;
+      const x = cx - w / 2;
+      const r = h / 2;
       ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
-      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
-      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+      ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
+      ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h);
+      ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r);
+      ctx.arcTo(x, y, x + r, y, r);
       ctx.closePath();
-      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1.5; ctx.stroke(); }
+      ctx.fillStyle = fillColor; ctx.fill();
+      ctx.strokeStyle = strokeColor; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = dotColor;
+      ctx.beginPath(); ctx.arc(x + 32, y + h / 2, 6, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#7AAEDE";
+      ctx.font = `600 ${fontSize}px ${font}`;
+      ctx.letterSpacing = letterSpacing + "px";
+      ctx.fillText(text, cx + dotW / 2 + 4, y + h / 2 + fontSize * 0.38);
+      ctx.letterSpacing = "0px";
     }
 
     async function render(canvas) {
@@ -161,134 +171,130 @@
       const v = V;
       const BG = "#060A10";
       const cx = W / 2;
-      const FONT = "BC, 'Arial Black', Arial";
+      const BC = "BC, 'Arial Black', Arial";
+      const DM = "'DM Sans', Arial";
 
-      // ── ZONAS (píxeles absolutos en 1080×1920)
-      // Foto arriba:  0 → 950px  (49%)
-      // Info central: 950 → 1460px (27%)
-      // Foto abajo:   1460 → 1920px (24%)
-      const TOP_END  = 950;
-      const BOT_START = 1460;
-      const BOT_H    = H - BOT_START;  // 460px
-      const INFO_H   = BOT_START - TOP_END; // 510px — espacio cómodo
+      // ─── ZONAS (px en 1080×1920) ───
+      // Foto arriba : 0       → 840    (44%)
+      // Info block  : 840     → 1480   (33% = 640px — espacio amplio)
+      // Foto abajo  : 1480    → 1920   (23% = 440px)
+      const TOP_END   = 840;
+      const BOT_START = 1480;
 
-      // ── Fondo base
       ctx.fillStyle = BG;
       ctx.fillRect(0, 0, W, H);
 
       const [imgA, imgB] = await Promise.all([loadImg(fotos[0]), loadImg(fotos[1])]);
 
-      // ── Foto arriba
+      // FOTO ARRIBA
       cover(ctx, imgA, 0, 0, W, TOP_END);
-
-      // Fade inferior foto arriba — largo y suave
-      gradV(ctx, 0, TOP_END - 380, W, 380, [
+      gradV(ctx, 0, TOP_END - 320, W, 320, [
         [0,   "rgba(6,10,16,0)"],
-        [0.6, "rgba(6,10,16,0.8)"],
+        [0.5, "rgba(6,10,16,0.7)"],
         [1,   "rgba(6,10,16,1)"]
       ]);
 
-      // ── Bloque info — fondo sólido
+      // INFO BLOCK fondo
       ctx.fillStyle = BG;
-      ctx.fillRect(0, TOP_END, W, INFO_H);
+      ctx.fillRect(0, TOP_END, W, BOT_START - TOP_END);
 
-      // ── Foto abajo
-      cover(ctx, imgB, 0, BOT_START, W, BOT_H);
-
-      // Fade superior foto abajo
-      gradV(ctx, 0, BOT_START, W, Math.round(BOT_H * 0.55), [
+      // FOTO ABAJO
+      cover(ctx, imgB, 0, BOT_START, W, H - BOT_START);
+      gradV(ctx, 0, BOT_START, W, 240, [
         [0, "rgba(6,10,16,1)"],
         [1, "rgba(6,10,16,0)"]
       ]);
-
-      // Fade inferior foto abajo (firma)
       gradV(ctx, 0, H - 180, W, 180, [
         [0, "rgba(6,10,16,0)"],
-        [1, "rgba(6,10,16,0.88)"]
+        [1, "rgba(6,10,16,0.9)"]
       ]);
 
-      // ── LOGO — esquina superior izquierda ──
+      // LOGO
       const logoImg = await loadImg("https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg");
-      const LX = 60, LY = 68, LR = 40;
+      const LX = 64, LY = 72, LR = 40;
       if (logoImg) {
         ctx.save();
         ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
         ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
         ctx.restore();
-        ctx.beginPath(); ctx.arc(LX, LY, LR + 2.5, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(58,155,255,0.28)"; ctx.lineWidth = 2.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(LX, LY, LR + 3, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(58,155,255,0.28)"; ctx.lineWidth = 3; ctx.stroke();
       }
-
-      // Texto logo
       ctx.textAlign = "left";
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.font = `700 30px ${FONT}`;
-      ctx.fillText("DESBALIZAR", LX + LR + 16, LY - 4);
-      ctx.fillStyle = "rgba(255,255,255,0.25)";
-      ctx.font = `400 22px 'DM Sans', Arial`;
-      ctx.fillText("Desarmadero autorizado", LX + LR + 16, LY + 22);
+      ctx.fillStyle = "rgba(255,255,255,0.6)";
+      ctx.font = "700 30px BC, Arial";
+      ctx.fillText("DESBALIZAR", LX + LR + 18, LY - 2);
+      ctx.fillStyle = "rgba(255,255,255,0.24)";
+      ctx.font = "400 22px 'DM Sans', Arial";
+      ctx.fillText("Desarmadero autorizado", LX + LR + 18, LY + 26);
 
-      // ── BLOQUE INFO — posicionado dentro de INFO_H ──
+      // ─── BLOQUE INFO — centrado verticalmente en 840→1480 ───
       ctx.textAlign = "center";
 
-      // Punto de inicio del bloque de texto (dentro de la zona info)
-      const IY = TOP_END + 60; // 60px de margen superior dentro del bloque
-
-      // Badge pill
-      const badgeTxt = "INGRESO PARA DESARME";
-      ctx.font = `600 32px ${FONT}`;
-      const bW = ctx.measureText(badgeTxt).width + 64;
-      const bH = 58;
-      const bX = cx - bW / 2;
-      const bY = IY;
-      roundRect(ctx, bX, bY, bW, bH, bH / 2,
-        "rgba(21,84,168,0.16)",
-        "rgba(58,155,255,0.25)", 1.5);
-      ctx.fillStyle = "#3A9BFF";
-      ctx.beginPath(); ctx.arc(bX + 28, bY + bH / 2, 5.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = "#7AAEDE";
-      ctx.font = `600 30px ${FONT}`;
-      ctx.letterSpacing = "3px";
-      ctx.fillText(badgeTxt, cx + 7, bY + bH / 2 + 11);
-      ctx.letterSpacing = "0px";
-
-      // Marca
-      const marcaY = bY + bH + 80;
-      ctx.fillStyle = "rgba(255,255,255,0.28)";
-      ctx.font = `500 44px ${FONT}`;
-      ctx.letterSpacing = "10px";
-      ctx.fillText((v.marca || "").toUpperCase(), cx, marcaY);
-      ctx.letterSpacing = "0px";
-
-      // Modelo — protagonista, tamaño adaptativo
+      // 1. Calcular tamaño del modelo
       const modelo = (v.modelo || "").toUpperCase();
-      let fs = 152;
-      ctx.font = `900 ${fs}px ${FONT}`;
-      while (ctx.measureText(modelo).width > W - 64 && fs > 72) {
-        fs -= 4;
-        ctx.font = `900 ${fs}px ${FONT}`;
+      let mfs = 150;
+      ctx.font = "900 " + mfs + "px BC, 'Arial Black', Arial";
+      while (ctx.measureText(modelo).width > W - 80 && mfs > 68) {
+        mfs -= 3;
+        ctx.font = "900 " + mfs + "px BC, 'Arial Black', Arial";
       }
-      const modeloY = marcaY + fs * 0.92;
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(modelo, cx, modeloY);
 
-      // Specs — año · km
+      // 2. Calcular altura total del bloque
+      const BADGE_H = 62;
+      const ROW_MARCA = 52;
+      const ROW_MODELO = Math.round(mfs * 0.88);
+      const ROW_SPECS = 44;
+      const GAP1 = 56;  // badge → marca
+      const GAP2 = 12;  // marca → modelo
+      const GAP3 = 44;  // modelo → specs
+      const totalH = BADGE_H + GAP1 + ROW_MARCA + GAP2 + ROW_MODELO + GAP3 + ROW_SPECS;
+
+      // 3. Punto de inicio: centrado en la zona info
+      const ZONE_MID = (TOP_END + BOT_START) / 2;  // = 1160
+      let iy = ZONE_MID - totalH / 2;
+
+      // BADGE
+      pill(ctx, cx, iy, BADGE_H,
+        "INGRESO PARA DESARME",
+        "BC, 'Arial Black', Arial", 32, 3,
+        "#3A9BFF",
+        "rgba(21,84,168,0.18)",
+        "rgba(58,155,255,0.28)"
+      );
+      iy += BADGE_H + GAP1;
+
+      // MARCA
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.font = "500 46px BC, 'Arial Black', Arial";
+      ctx.letterSpacing = "10px";
+      ctx.fillText((v.marca || "").toUpperCase(), cx, iy + ROW_MARCA * 0.78);
+      ctx.letterSpacing = "0px";
+      iy += ROW_MARCA + GAP2;
+
+      // MODELO
+      ctx.fillStyle = "#FFFFFF";
+      ctx.font = "900 " + mfs + "px BC, 'Arial Black', Arial";
+      ctx.fillText(modelo, cx, iy + ROW_MODELO);
+      iy += ROW_MODELO + GAP3;
+
+      // SPECS
       const specs = [];
       if (v.anio) specs.push(String(v.anio));
       if (v.km) specs.push(Number(v.km).toLocaleString("es-AR") + " km");
       if (specs.length) {
         ctx.fillStyle = "rgba(255,255,255,0.3)";
-        ctx.font = `400 36px 'DM Sans', Arial`;
+        ctx.font = "400 38px 'DM Sans', Arial";
         ctx.letterSpacing = "2px";
-        ctx.fillText(specs.join("   ·   "), cx, modeloY + 68);
+        ctx.fillText(specs.join("   ·   "), cx, iy + ROW_SPECS * 0.8);
         ctx.letterSpacing = "0px";
       }
 
-      // ── FIRMA inferior ──
-      ctx.fillStyle = "rgba(255,255,255,0.14)";
-      ctx.font = `300 24px 'DM Sans', Arial`;
+      // FIRMA
+      ctx.fillStyle = "rgba(255,255,255,0.13)";
+      ctx.font = "300 24px 'DM Sans', Arial";
       ctx.letterSpacing = "4px";
-      ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", cx, H - 38);
+      ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", cx, H - 42);
       ctx.letterSpacing = "0px";
     }
 
@@ -308,8 +314,8 @@
 
     function actualizarSlots() {
       [["a", 0], ["b", 1]].forEach(([s, i]) => {
-        const slot = document.getElementById(`slot-${s}`);
-        const empty = document.getElementById(`slot-${s}-empty`);
+        const slot = document.getElementById("slot-" + s);
+        const empty = document.getElementById("slot-" + s + "-empty");
         const url = fotos[i];
         const old = slot.querySelector("img");
         if (url) {
@@ -331,7 +337,7 @@
       btn.disabled = true; btn.textContent = "Generando…";
       const cv = document.createElement("canvas");
       await render(cv);
-      const nombre = `story_${(V.marca||"").toLowerCase()}_${(V.modelo||"").toLowerCase().replace(/\s+/g,"_")}.jpg`;
+      const nombre = "story_" + (V.marca||"").toLowerCase() + "_" + (V.modelo||"").toLowerCase().replace(/\s+/g,"_") + ".jpg";
       cv.toBlob(blob => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -350,7 +356,7 @@
       if (!data) return;
       V = data;
       fotos = Array.isArray(data.fotos) ? [data.fotos[0]||null, data.fotos[1]||null] : [null, null];
-      document.getElementById("ctrl-nombre").textContent = `${data.marca||""} ${data.modelo||""}`.trim();
+      document.getElementById("ctrl-nombre").textContent = (data.marca||"") + " " + (data.modelo||"");
       const d = [data.anio, data.km ? Number(data.km).toLocaleString("es-AR") + " km" : null].filter(Boolean).join(" · ");
       document.getElementById("ctrl-datos").textContent = d;
       actualizarSlots();
