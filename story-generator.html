@@ -154,88 +154,50 @@
 
       ctx.fillStyle = "#05070C"; ctx.fillRect(0, 0, W, H);
 
-      /* Fotos 50/50 */
+      /* ZONAS FIJAS:
+         Foto arriba:  0    → 720  (720px)
+         Franja:       720  → 1200 (480px)
+         Foto abajo:   1200 → 1920 (720px)
+      */
+      const ZA_H = 720, ZF_Y = 720, ZF_H = 480, ZB_Y = 1200, ZB_H = 720;
+
       const [imgA, imgB] = await Promise.all([loadImg(fotos[0]), loadImg(fotos[1])]);
 
-      /* Foto arriba — ocupa mitad superior */
-      cover(ctx, imgA, 0, 0, W, H / 2);
-      ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0, 0, W, H / 2);
+      /* Foto arriba — clip exacto */
+      cover(ctx, imgA, 0, 0, W, ZA_H);
+      ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0, 0, W, ZA_H);
+      /* Gradiente al borde inferior de foto arriba */
+      gv(ctx, 0, ZA_H - 120, W, 120, "rgba(5,7,12,0)", "rgba(5,7,12,1)");
 
-      /* Foto abajo — ocupa mitad inferior */
-      cover(ctx, imgB, 0, H / 2, W, H / 2);
-      ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0, H / 2, W, H / 2);
+      /* Foto abajo — clip exacto */
+      cover(ctx, imgB, 0, ZB_Y, W, ZB_H);
+      ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0, ZB_Y, W, ZB_H);
+      /* Gradiente al borde superior de foto abajo */
+      gv(ctx, 0, ZB_Y, W, 120, "rgba(5,7,12,1)", "rgba(5,7,12,0)");
 
-      /* Gradiente central que une las dos fotos */
-      gv(ctx, 0, H/2 - 120, W, 240, "rgba(5,7,12,0)", "rgba(5,7,12,0.7)");
-      gv(ctx, 0, H/2 + 60, W, 200, "rgba(5,7,12,0.7)", "rgba(5,7,12,0)");
+      /* FRANJA CENTRAL — 100% oscura, sin fotos */
+      ctx.fillStyle = "#05070C"; ctx.fillRect(0, ZF_Y, W, ZF_H);
 
-      /* Gradiente oscuro SOLO en el tercio inferior para el texto */
-      gv(ctx, 0, H * 0.65, W, H * 0.35, "rgba(5,7,12,0)", "rgba(5,7,12,0.92)");
+      /* Línea azul top */
+      const lineG = (y) => {
+        const g = ctx.createLinearGradient(0, 0, W, 0);
+        g.addColorStop(0, "rgba(58,155,255,0)");
+        g.addColorStop(0.15, "#1554A8");
+        g.addColorStop(0.85, "#1554A8");
+        g.addColorStop(1, "rgba(58,155,255,0)");
+        ctx.fillStyle = g; ctx.fillRect(0, y, W, 3);
+      };
+      lineG(ZF_Y); lineG(ZF_Y + ZF_H - 3);
 
-      /* Bloque de texto en el tercio inferior */
+      /* Contenido franja */
       const cx = W / 2;
-      const tyBase = H * 0.845;
       const font = "BC, 'Arial Black', Arial";
-
       ctx.textAlign = "center";
 
-      /* TAG — pill azul redondeado */
-      const tagText = "INGRESO PARA DESARME";
-      ctx.font = `700 32px ${font}`;
-      const tagW = ctx.measureText(tagText).width + 60;
-      const tagH = 56;
-      const tagX = cx - tagW / 2;
-      const tagY = tyBase - 200;
-      roundRect(ctx, tagX, tagY, tagW, tagH, tagH / 2, "rgba(21,84,168,0.85)", "rgba(58,155,255,0.6)");
-      ctx.fillStyle = "#85B7EB";
-      ctx.fillText(tagText, cx, tagY + tagH / 2 + 11);
-
-      /* Marca */
-      ctx.fillStyle = "rgba(255,255,255,0.38)";
-      ctx.font = `500 38px ${font}`;
-      ctx.letterSpacing = "6px";
-      ctx.fillText((v.marca || "").toUpperCase(), cx, tyBase - 110);
-
-      /* Modelo — grande, adaptativo */
-      const modelo = (v.modelo || "").toUpperCase();
-      ctx.fillStyle = "#FFFFFF";
-      ctx.letterSpacing = "0px";
-      let fs = 110;
-      ctx.font = `900 ${fs}px ${font}`;
-      while (ctx.measureText(modelo).width > W - 80 && fs > 60) {
-        fs -= 4; ctx.font = `900 ${fs}px ${font}`;
-      }
-      ctx.fillText(modelo, cx, tyBase - 10);
-
-      /* Specs — badges azules */
-      const specs = [];
-      if (v.anio) specs.push(String(v.anio));
-      if (v.km) specs.push(Number(v.km).toLocaleString("es-AR") + " km");
-
-      if (specs.length) {
-        const badgeH = 52, badgePad = 40, gap = 20;
-        ctx.font = `600 28px ${font}`;
-        const widths = specs.map(s => ctx.measureText(s.toUpperCase()).width + badgePad * 2);
-        const totalW = widths.reduce((a, b) => a + b, 0) + gap * (specs.length - 1);
-        let bx = cx - totalW / 2;
-        const by = tyBase + 30;
-        specs.forEach((s, i) => {
-          const bw = widths[i];
-          roundRect(ctx, bx, by, bw, badgeH, badgeH / 2,
-            "rgba(58,155,255,0.15)",
-            "rgba(58,155,255,0.45)");
-          ctx.fillStyle = "#85B7EB";
-          ctx.font = `600 28px ${font}`;
-          ctx.fillText(s.toUpperCase(), bx + bw / 2, by + badgeH / 2 + 10);
-          bx += bw + gap;
-        });
-      }
-
-      /* Logo arriba izquierda */
+      /* Logo */
       const logoImg = await loadImg("https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg");
       if (logoImg) {
-        const r = 48;
-        const lx = 60, ly = 60;
+        const r = 46, lx = cx, ly = ZF_Y + 68;
         ctx.save();
         ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.clip();
         ctx.drawImage(logoImg, lx - r, ly - r, r * 2, r * 2);
@@ -244,8 +206,54 @@
         ctx.strokeStyle = "rgba(58,155,255,0.5)"; ctx.lineWidth = 3; ctx.stroke();
       }
 
+      /* TAG pill azul */
+      const tagText = "INGRESO PARA DESARME";
+      ctx.font = `700 34px ${font}`;
+      const tagW = ctx.measureText(tagText).width + 64;
+      const tagH = 58, tagY = ZF_Y + 138, tagX = cx - tagW / 2;
+      roundRect(ctx, tagX, tagY, tagW, tagH, tagH / 2, "rgba(21,84,168,0.85)", "rgba(58,155,255,0.55)");
+      ctx.fillStyle = "#85B7EB";
+      ctx.fillText(tagText, cx, tagY + tagH / 2 + 12);
+
+      /* Marca */
+      ctx.fillStyle = "rgba(255,255,255,0.38)";
+      ctx.font = `500 40px ${font}`;
+      ctx.letterSpacing = "6px";
+      ctx.fillText((V.marca || "").toUpperCase(), cx, ZF_Y + 240);
+
+      /* Modelo */
+      const modelo = (V.modelo || "").toUpperCase();
+      ctx.fillStyle = "#FFFFFF";
+      ctx.letterSpacing = "0px";
+      let fs = 108;
+      ctx.font = `900 ${fs}px ${font}`;
+      while (ctx.measureText(modelo).width > W - 80 && fs > 58) {
+        fs -= 4; ctx.font = `900 ${fs}px ${font}`;
+      }
+      ctx.fillText(modelo, cx, ZF_Y + 350);
+
+      /* Badges specs */
+      const specs = [];
+      if (V.anio) specs.push(String(V.anio));
+      if (V.km) specs.push(Number(V.km).toLocaleString("es-AR") + " km");
+      if (specs.length) {
+        const bH = 52, bPad = 44, gap = 20;
+        ctx.font = `600 28px ${font}`;
+        const bWidths = specs.map(s => ctx.measureText(s.toUpperCase()).width + bPad * 2);
+        const totalW = bWidths.reduce((a, b) => a + b, 0) + gap * (specs.length - 1);
+        let bx = cx - totalW / 2;
+        const by = ZF_Y + 388;
+        specs.forEach((s, i) => {
+          roundRect(ctx, bx, by, bWidths[i], bH, bH / 2,
+            "rgba(58,155,255,0.12)", "rgba(58,155,255,0.4)");
+          ctx.fillStyle = "#85B7EB";
+          ctx.fillText(s.toUpperCase(), bx + bWidths[i] / 2, by + bH / 2 + 10);
+          bx += bWidths[i] + gap;
+        });
+      }
+
       /* Firma */
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
       ctx.font = `400 24px DM Sans, Arial`;
       ctx.letterSpacing = "3px";
       ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", cx, H - 44);
