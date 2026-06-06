@@ -175,86 +175,102 @@
       /* Gradiente al borde superior de foto abajo */
       gv(ctx, 0, ZB_Y, W, 120, "rgba(5,7,12,1)", "rgba(5,7,12,0)");
 
-      /* FRANJA CENTRAL — 100% oscura, sin fotos */
-      ctx.fillStyle = "#05070C"; ctx.fillRect(0, ZF_Y, W, ZF_H);
+      /* FRANJA CENTRAL — gradiente azul oscuro */
+      const gFranja = ctx.createLinearGradient(0, ZF_Y, W, ZF_Y + ZF_H);
+      gFranja.addColorStop(0, "#0B1E3D");
+      gFranja.addColorStop(1, "#091527");
+      ctx.fillStyle = gFranja;
+      ctx.fillRect(0, ZF_Y, W, ZF_H);
 
-      /* Línea azul top */
-      const lineG = (y) => {
-        const g = ctx.createLinearGradient(0, 0, W, 0);
-        g.addColorStop(0, "rgba(58,155,255,0)");
-        g.addColorStop(0.15, "#1554A8");
-        g.addColorStop(0.85, "#1554A8");
-        g.addColorStop(1, "rgba(58,155,255,0)");
-        ctx.fillStyle = g; ctx.fillRect(0, y, W, 3);
-      };
-      lineG(ZF_Y); lineG(ZF_Y + ZF_H - 3);
+      /* Borde azul sutil top y bottom */
+      ctx.fillStyle = "rgba(58,155,255,0.18)";
+      ctx.fillRect(0, ZF_Y, W, 1);
+      ctx.fillRect(0, ZF_Y + ZF_H - 1, W, 1);
 
       /* Contenido franja */
       const cx = W / 2;
       const font = "BC, 'Arial Black', Arial";
       ctx.textAlign = "center";
 
-      /* Logo */
+      /* Logo centrado arriba */
       const logoImg = await loadImg("https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg");
       if (logoImg) {
-        const r = 46, lx = cx, ly = ZF_Y + 68;
+        const r = 44, lx = cx, ly = ZF_Y + 62;
         ctx.save();
         ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.clip();
         ctx.drawImage(logoImg, lx - r, ly - r, r * 2, r * 2);
         ctx.restore();
-        ctx.beginPath(); ctx.arc(lx, ly, r + 3, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(58,155,255,0.5)"; ctx.lineWidth = 3; ctx.stroke();
+        ctx.beginPath(); ctx.arc(lx, ly, r + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(58,155,255,0.35)"; ctx.lineWidth = 2; ctx.stroke();
       }
 
-      /* TAG pill azul */
-      const tagText = "INGRESO PARA DESARME";
-      ctx.font = `700 34px ${font}`;
-      const tagW = ctx.measureText(tagText).width + 64;
-      const tagH = 58, tagY = ZF_Y + 138, tagX = cx - tagW / 2;
-      roundRect(ctx, tagX, tagY, tagW, tagH, tagH / 2, "rgba(21,84,168,0.85)", "rgba(58,155,255,0.55)");
-      ctx.fillStyle = "#85B7EB";
-      ctx.fillText(tagText, cx, tagY + tagH / 2 + 12);
+      /* EYEBROW — letra chica, tracking amplio */
+      ctx.fillStyle = "#3A9BFF";
+      ctx.font = `600 28px ${font}`;
+      ctx.letterSpacing = "8px";
+      ctx.fillText("INGRESO PARA DESARME", cx, ZF_Y + 134);
 
-      /* Marca */
-      ctx.fillStyle = "rgba(255,255,255,0.38)";
-      ctx.font = `500 40px ${font}`;
-      ctx.letterSpacing = "6px";
-      ctx.fillText((V.marca || "").toUpperCase(), cx, ZF_Y + 240);
-
-      /* Modelo */
+      /* MODELO — grande, blanco, protagonista */
       const modelo = (V.modelo || "").toUpperCase();
       ctx.fillStyle = "#FFFFFF";
-      ctx.letterSpacing = "0px";
-      let fs = 108;
+      ctx.letterSpacing = "1px";
+      let fs = 112;
       ctx.font = `900 ${fs}px ${font}`;
-      while (ctx.measureText(modelo).width > W - 80 && fs > 58) {
+      while (ctx.measureText(modelo).width > W - 60 && fs > 58) {
         fs -= 4; ctx.font = `900 ${fs}px ${font}`;
       }
-      ctx.fillText(modelo, cx, ZF_Y + 350);
+      ctx.fillText(modelo, cx, ZF_Y + 252);
 
-      /* Badges specs */
+      /* Marca debajo del modelo */
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.font = `500 32px ${font}`;
+      ctx.letterSpacing = "8px";
+      ctx.fillText((V.marca || "").toUpperCase(), cx, ZF_Y + 300);
+
+      /* Línea divisora azul */
+      const lineW = 320;
+      const lineY = ZF_Y + 326;
+      const lg = ctx.createLinearGradient(cx - lineW/2, 0, cx + lineW/2, 0);
+      lg.addColorStop(0, "rgba(58,155,255,0)");
+      lg.addColorStop(0.5, "#1554A8");
+      lg.addColorStop(1, "rgba(58,155,255,0)");
+      ctx.fillStyle = lg;
+      ctx.fillRect(cx - lineW/2, lineY, lineW, 3);
+
+      /* STATS — año y km como columnas */
       const specs = [];
-      if (V.anio) specs.push(String(V.anio));
-      if (V.km) specs.push(Number(V.km).toLocaleString("es-AR") + " km");
+      if (V.anio) specs.push({ val: String(V.anio), lbl: "AÑO" });
+      if (V.km)   specs.push({ val: Number(V.km).toLocaleString("es-AR") + " km", lbl: "KILÓMETROS" });
+
       if (specs.length) {
-        const bH = 52, bPad = 44, gap = 20;
-        ctx.font = `600 28px ${font}`;
-        const bWidths = specs.map(s => ctx.measureText(s.toUpperCase()).width + bPad * 2);
-        const totalW = bWidths.reduce((a, b) => a + b, 0) + gap * (specs.length - 1);
-        let bx = cx - totalW / 2;
-        const by = ZF_Y + 388;
+        const colW = W / (specs.length + 1);
         specs.forEach((s, i) => {
-          roundRect(ctx, bx, by, bWidths[i], bH, bH / 2,
-            "rgba(58,155,255,0.12)", "rgba(58,155,255,0.4)");
-          ctx.fillStyle = "#85B7EB";
-          ctx.fillText(s.toUpperCase(), bx + bWidths[i] / 2, by + bH / 2 + 10);
-          bx += bWidths[i] + gap;
+          const sx = colW * (i + 1);
+          const sy = ZF_Y + 368;
+
+          /* Valor grande */
+          ctx.fillStyle = "#FFFFFF";
+          ctx.font = `800 56px ${font}`;
+          ctx.letterSpacing = "1px";
+          ctx.fillText(s.val.toUpperCase(), sx, sy);
+
+          /* Label */
+          ctx.fillStyle = "rgba(58,155,255,0.6)";
+          ctx.font = `500 22px ${font}`;
+          ctx.letterSpacing = "4px";
+          ctx.fillText(s.lbl, sx, sy + 36);
         });
+
+        /* Separador vertical entre stats */
+        if (specs.length === 2) {
+          ctx.fillStyle = "rgba(58,155,255,0.15)";
+          ctx.fillRect(cx - 1, ZF_Y + 346, 2, 80);
+        }
       }
 
       /* Firma */
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
-      ctx.font = `400 24px DM Sans, Arial`;
+      ctx.fillStyle = "rgba(255,255,255,0.12)";
+      ctx.font = `400 22px DM Sans, Arial`;
       ctx.letterSpacing = "3px";
       ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", cx, H - 44);
     }
