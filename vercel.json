@@ -5,6 +5,7 @@
     { "source": "/vehiculo", "destination": "/vehiculo.html" },
     { "source": "/motor", "destination": "/motor.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/links", "destination": "/links.html" }
+    { "source": "/links", "destination": "/links.html" },
+    { "source": "/story", "destination": "/story-generator.html" }
   ]
 }
