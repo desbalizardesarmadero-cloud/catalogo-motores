@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Generar Story — Desbalizar</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #0A0D14; color: #EDF2FF; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 80px; }
+
+    .top-bar { width: 100%; max-width: 520px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .top-bar a { font-size: 13px; color: #3A9BFF; text-decoration: none; display: flex; align-items: center; gap: 6px; }
+    .top-bar a svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .top-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; text-transform: uppercase; color: #fff; }
+
+    /* CONTROLES */
+    .controls { width: 100%; max-width: 520px; background: #10141F; border: 1px solid rgba(58,155,255,0.12); border-radius: 16px; padding: 20px; margin-bottom: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .ctrl-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #5E7299; margin-bottom: 6px; }
+    .ctrl-veh { font-size: 16px; font-weight: 600; color: #fff; }
+    .ctrl-datos { font-size: 13px; color: #9BADC8; margin-top: 2px; }
+    .fotos-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .foto-slot { background: #161C2E; border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; aspect-ratio: 4/3; overflow: hidden; position: relative; cursor: pointer; transition: border-color .2s; }
+    .foto-slot:hover { border-color: rgba(240,165,0,0.5); }
+    .foto-slot img { width: 100%; height: 100%; object-fit: cover; }
+    .foto-slot-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.65); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-align: center; padding: 5px; color: rgba(255,255,255,0.8); }
+    .foto-slot-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 6px; color: #5E7299; font-size: 12px; }
+    .foto-slot-empty svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+    .hint { font-size: 12px; color: #5E7299; text-align: center; }
+
+    .btn-download { width: 100%; max-width: 520px; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 16px; border-radius: 12px; background: linear-gradient(135deg, #B8820A, #F0A500); color: #000; font-size: 16px; font-weight: 700; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: filter .2s; margin-bottom: 32px; }
+    .btn-download:hover { filter: brightness(1.1); }
+    .btn-download:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* PREVIEW de la story — ratio 9:16 */
+    .preview-wrap { width: 100%; max-width: 360px; border-radius: 16px; overflow: hidden; border: 1px solid rgba(240,165,0,0.2); box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+
+    /* ──────────────────────────────────
+       STORY — este div SE CAPTURA
+    ────────────────────────────────── */
+    #story-render {
+      width: 1080px;
+      height: 1920px;
+      position: relative;
+      overflow: hidden;
+      background: #05070C;
+      font-family: 'Barlow Condensed', sans-serif;
+      /* Scale para preview */
+      transform-origin: top left;
+    }
+
+    .sr-foto { position: absolute; left: 0; right: 0; overflow: hidden; }
+    .sr-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .sr-foto-top { top: 0; height: 800px; }
+    .sr-foto-bot { bottom: 0; height: 800px; }
+
+    /* Gradientes encima de fotos */
+    .sr-foto-top::after {
+      content: '';
+      position: absolute; left: 0; right: 0; bottom: 0; height: 320px;
+      background: linear-gradient(to bottom, transparent, #05070C);
+    }
+    .sr-foto-bot::before {
+      content: '';
+      position: absolute; left: 0; right: 0; top: 0; height: 320px;
+      background: linear-gradient(to top, transparent, #05070C);
+      z-index: 1;
+    }
+
+    /* Placeholder sin foto */
+    .sr-foto-placeholder { width: 100%; height: 100%; background: #0E1220; display: flex; align-items: center; justify-content: center; }
+    .sr-foto-placeholder svg { width: 80px; height: 80px; stroke: #1F2840; fill: none; stroke-width: 1.5; }
+
+    /* Franja central */
+    .sr-franja {
+      position: absolute;
+      left: 0; right: 0;
+      top: 800px;
+      height: 320px;
+      background: #05070C;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      z-index: 10;
+    }
+
+    /* Líneas doradas */
+    .sr-franja::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(to right, transparent, #F0A500 20%, #F0A500 80%, transparent);
+    }
+    .sr-franja::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(to right, transparent, #F0A500 20%, #F0A500 80%, transparent);
+    }
+
+    .sr-logo-wrap {
+      width: 80px; height: 80px; border-radius: 50%; overflow: hidden;
+      border: 3px solid rgba(240,165,0,0.5);
+      margin-bottom: 18px;
+      flex-shrink: 0;
+    }
+    .sr-logo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+
+    .sr-tag {
+      font-size: 42px; font-weight: 700;
+      letter-spacing: 6px; text-transform: uppercase;
+      color: #F0A500;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .sr-sep { width: 400px; height: 2px; background: rgba(240,165,0,0.25); margin-bottom: 10px; border-radius: 1px; }
+
+    .sr-marca {
+      font-size: 36px; font-weight: 500;
+      letter-spacing: 8px; text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+      line-height: 1; margin-bottom: 6px;
+    }
+
+    .sr-modelo {
+      font-size: 96px; font-weight: 900;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: #FFFFFF; line-height: .9;
+      text-align: center;
+      padding: 0 40px;
+    }
+    .sr-modelo.small { font-size: 72px; }
+    .sr-modelo.xsmall { font-size: 56px; }
+
+    .sr-specs {
+      font-size: 30px; font-weight: 400;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-top: 10px;
+    }
+
+    .sr-firma {
+      position: absolute;
+      bottom: 36px; left: 0; right: 0;
+      text-align: center;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 22px; font-weight: 400;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.2);
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <a href="/admin">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver al admin
+    </a>
+    <div class="top-title">📱 Generar Story</div>
+  </div>
+
+  <!-- CONTROLES -->
+  <div class="controls" id="controls">
+    <div>
+      <div class="ctrl-label">Vehículo</div>
+      <div class="ctrl-veh" id="ctrl-nombre">Cargando…</div>
+      <div class="ctrl-datos" id="ctrl-datos"></div>
+    </div>
+    <div>
+      <div class="ctrl-label">Fotos — tocá para intercambiar</div>
+      <div class="fotos-row">
+        <div class="foto-slot" id="slot-a" onclick="swap()">
+          <div class="foto-slot-empty" id="slot-a-empty">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Sin foto
+          </div>
+          <div class="foto-slot-label">ARRIBA</div>
+        </div>
+        <div class="foto-slot" id="slot-b" onclick="swap()">
+          <div class="foto-slot-empty" id="slot-b-empty">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Sin foto
+          </div>
+          <div class="foto-slot-label">ABAJO</div>
+        </div>
+      </div>
+      <div class="hint">Tocá para intercambiar · La story se actualiza en tiempo real</div>
+    </div>
+  </div>
+
+  <button class="btn-download" id="btn-dl" onclick="descargar()">
+    ⬇ Descargar Story (1080×1920)
+  </button>
+
+  <!-- PREVIEW -->
+  <div class="preview-wrap">
+    <div id="story-render">
+
+      <!-- Foto arriba -->
+      <div class="sr-foto sr-foto-top" id="sr-foto-top">
+        <div class="sr-foto-placeholder" id="ph-top">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+      </div>
+
+      <!-- Foto abajo -->
+      <div class="sr-foto sr-foto-bot" id="sr-foto-bot">
+        <div class="sr-foto-placeholder" id="ph-bot">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+      </div>
+
+      <!-- Franja central -->
+      <div class="sr-franja">
+        <div class="sr-logo-wrap">
+          <img src="https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg" alt="Logo"/>
+        </div>
+        <div class="sr-tag">INGRESO PARA DESARME</div>
+        <div class="sr-sep"></div>
+        <div class="sr-marca" id="sr-marca">—</div>
+        <div class="sr-modelo" id="sr-modelo">—</div>
+        <div class="sr-specs" id="sr-specs"></div>
+      </div>
+
+      <!-- Firma -->
+      <div class="sr-firma">DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES</div>
+
+    </div>
+  </div>
+
+  <script>
+    const SUPA_URL = "https://okjroggxyvwmlvowdldo.supabase.co";
+    const SUPA_KEY = "sb_publishable_wMPA_yj45_gmi0duYi6CMw_vl0jNeE8";
+    const { createClient } = supabase;
+    const sb = createClient(SUPA_URL, SUPA_KEY);
+
+    let vehiculo = null;
+    let fotos = [null, null];
+
+    /* Escalar preview al ancho disponible */
+    function escalarPreview() {
+      const el = document.getElementById("story-render");
+      const wrap = el.parentElement;
+      const scale = wrap.clientWidth / 1080;
+      el.style.transform = `scale(${scale})`;
+      wrap.style.height = (1920 * scale) + "px";
+    }
+    window.addEventListener("resize", escalarPreview);
+
+    /* Cargar vehículo desde URL */
+    async function init() {
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) { document.getElementById("ctrl-nombre").textContent = "ID no encontrado"; return; }
+      const { data } = await sb.from("vehiculos").select("*").eq("id", id).single();
+      if (!data) { document.getElementById("ctrl-nombre").textContent = "Vehículo no encontrado"; return; }
+      vehiculo = data;
+      fotos = Array.isArray(data.fotos) ? [data.fotos[0]||null, data.fotos[1]||null] : [null,null];
+
+      document.getElementById("ctrl-nombre").textContent = `${data.marca||""} ${data.modelo||""}`.trim();
+      const d = [data.anio, data.km ? Number(data.km).toLocaleString("es-AR") + " km" : null].filter(Boolean).join(" · ");
+      document.getElementById("ctrl-datos").textContent = d;
+
+      actualizarStory();
+      escalarPreview();
+    }
+
+    function actualizarStory() {
+      const v = vehiculo;
+      if (!v) return;
+
+      /* Textos */
+      document.getElementById("sr-marca").textContent = (v.marca||"").toUpperCase();
+      const modelo = (v.modelo||"").toUpperCase();
+      const el = document.getElementById("sr-modelo");
+      el.textContent = modelo;
+      el.className = "sr-modelo" + (modelo.length > 16 ? (modelo.length > 22 ? " xsmall" : " small") : "");
+
+      const specs = [v.anio, v.km ? Number(v.km).toLocaleString("es-AR") + " KM" : null].filter(Boolean).join("   ·   ");
+      document.getElementById("sr-specs").textContent = specs;
+
+      /* Foto arriba */
+      actualizarFoto("sr-foto-top", "ph-top", "slot-a", "slot-a-empty", fotos[0]);
+      /* Foto abajo */
+      actualizarFoto("sr-foto-bot", "ph-bot", "slot-b", "slot-b-empty", fotos[1]);
+    }
+
+    function actualizarFoto(fotoId, phId, slotId, slotEmptyId, url) {
+      const fotoDiv  = document.getElementById(fotoId);
+      const ph       = document.getElementById(phId);
+      const slot     = document.getElementById(slotId);
+      const slotEmpty = document.getElementById(slotEmptyId);
+      const oldImg   = fotoDiv.querySelector("img");
+      const oldSlotImg = slot.querySelector("img");
+
+      if (url) {
+        ph.style.display = "none";
+        slotEmpty.style.display = "none";
+        if (!oldImg) {
+          const img = document.createElement("img");
+          img.src = url; img.crossOrigin = "anonymous";
+          fotoDiv.insertBefore(img, fotoDiv.firstChild);
+        } else { oldImg.src = url; }
+        if (!oldSlotImg) {
+          const img2 = document.createElement("img");
+          img2.src = url;
+          slot.insertBefore(img2, slot.querySelector(".foto-slot-label"));
+        } else { oldSlotImg.src = url; }
+      } else {
+        ph.style.display = "flex";
+        slotEmpty.style.display = "flex";
+        if (oldImg) oldImg.remove();
+        if (oldSlotImg) oldSlotImg.remove();
+      }
+    }
+
+    function swap() {
+      [fotos[0], fotos[1]] = [fotos[1], fotos[0]];
+      actualizarStory();
+    }
+
+    async function descargar() {
+      const btn = document.getElementById("btn-dl");
+      btn.disabled = true;
+      btn.textContent = "Generando…";
+
+      const el = document.getElementById("story-render");
+      const scale = el.style.transform;
+      el.style.transform = "none";
+
+      try {
+        const canvas = await html2canvas(el, {
+          width: 1080, height: 1920,
+          scale: 1,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: "#05070C",
+          logging: false
+        });
+
+        const v = vehiculo;
+        const nombre = `story_${(v.marca||"").toLowerCase()}_${(v.modelo||"").toLowerCase().replace(/\s+/g,"_")}.jpg`;
+        canvas.toBlob(blob => {
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = nombre;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }, "image/jpeg", 0.93);
+      } catch(e) {
+        alert("Error al generar: " + e.message);
+      }
+
+      el.style.transform = scale;
+      btn.disabled = false;
+      btn.textContent = "⬇ Descargar Story (1080×1920)";
+    }
+
+    init();
+  </script>
+</body>
+</html>
