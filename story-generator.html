@@ -166,15 +166,15 @@
       ctx.fillStyle = "rgba(0,0,0,0.1)"; ctx.fillRect(0, H / 2, W, H / 2);
 
       /* Gradiente central que une las dos fotos */
-      gv(ctx, 0, H/2 - 160, W, 320, "rgba(5,7,12,0)", "rgba(5,7,12,0.95)");
-      gv(ctx, 0, H/2 + 80, W, 320, "rgba(5,7,12,0.95)", "rgba(5,7,12,0)");
+      gv(ctx, 0, H/2 - 120, W, 240, "rgba(5,7,12,0)", "rgba(5,7,12,0.7)");
+      gv(ctx, 0, H/2 + 60, W, 200, "rgba(5,7,12,0.7)", "rgba(5,7,12,0)");
 
-      /* Gradiente oscuro sobre foto de abajo para el texto */
-      gv(ctx, 0, H * 0.55, W, H * 0.45, "rgba(5,7,12,0)", "rgba(5,7,12,0.97)");
+      /* Gradiente oscuro SOLO en el tercio inferior para el texto */
+      gv(ctx, 0, H * 0.65, W, H * 0.35, "rgba(5,7,12,0)", "rgba(5,7,12,0.92)");
 
-      /* Bloque de texto flotando sobre la foto de abajo */
+      /* Bloque de texto en el tercio inferior */
       const cx = W / 2;
-      const tyBase = H * 0.78;
+      const tyBase = H * 0.845;
       const font = "BC, 'Arial Black', Arial";
 
       ctx.textAlign = "center";
