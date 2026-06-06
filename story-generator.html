@@ -3,41 +3,50 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Story — Desbalizar</title>
+  <title>Generar Story — Desbalizar</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'DM Sans',sans-serif;background:#080B12;color:#EDF2FF;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:28px 16px 80px}
-    .top-bar{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-    .top-bar a{font-size:13px;color:#3A9BFF;text-decoration:none;display:flex;align-items:center;gap:5px}
-    .top-bar a svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2}
-    .top-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;text-transform:uppercase;color:#fff}
-    .controls{width:100%;max-width:480px;background:#10141F;border:1px solid rgba(58,155,255,0.12);border-radius:16px;padding:18px;margin-bottom:20px;display:flex;flex-direction:column;gap:14px}
-    .ctrl-label{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#5E7299;margin-bottom:5px}
-    .ctrl-veh{font-size:16px;font-weight:600;color:#fff}
-    .ctrl-datos{font-size:13px;color:#9BADC8;margin-top:2px}
-    .fotos-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .foto-slot{background:#161C2E;border:2px solid rgba(255,255,255,0.07);border-radius:10px;aspect-ratio:4/3;overflow:hidden;position:relative;cursor:pointer;transition:border-color .2s}
-    .foto-slot:hover{border-color:rgba(58,155,255,0.5)}
-    .foto-slot img{width:100%;height:100%;object-fit:cover;display:block}
-    .foto-slot-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.65);font-size:11px;font-weight:700;letter-spacing:.1em;text-align:center;padding:4px;color:rgba(255,255,255,0.8)}
-    .foto-slot-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:5px;color:#5E7299;font-size:12px}
-    .foto-slot-empty svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5}
-    .hint{font-size:12px;color:#5E7299;text-align:center}
-    .btn-dl{width:100%;max-width:480px;display:flex;align-items:center;justify-content:center;gap:8px;padding:15px;border-radius:12px;background:linear-gradient(135deg,#0C447C,#1554A8,#3A9BFF);color:#fff;font-size:16px;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:filter .2s;margin-bottom:28px;box-shadow:0 8px 24px rgba(58,155,255,0.3)}
-    .btn-dl:hover{filter:brightness(1.15)}
-    .btn-dl:disabled{opacity:.5;cursor:not-allowed}
-    .preview-wrap{width:100%;max-width:340px;border-radius:16px;overflow:hidden;border:1px solid rgba(58,155,255,0.2);box-shadow:0 20px 60px rgba(0,0,0,0.7)}
-    .preview-wrap canvas{width:100%;display:block}
-    #loading{text-align:center;color:#5E7299;font-size:13px;padding:40px;background:#10141F}
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background: #060A10; color: #EDF2FF; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 28px 16px 80px; }
+    .top-bar { width: 100%; max-width: 480px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .top-bar a { font-size: 13px; color: #3A9BFF; text-decoration: none; display: flex; align-items: center; gap: 5px; }
+    .top-bar a svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; }
+    .top-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; text-transform: uppercase; color: #fff; }
+
+    .controls { width: 100%; max-width: 480px; background: #0D1420; border: 1px solid rgba(58,155,255,0.1); border-radius: 16px; padding: 18px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .ctrl-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #4A6080; margin-bottom: 5px; }
+    .ctrl-veh { font-size: 16px; font-weight: 600; color: #fff; }
+    .ctrl-datos { font-size: 13px; color: #8A9CB8; margin-top: 2px; }
+
+    .fotos-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .foto-slot { background: #111926; border: 1.5px solid rgba(255,255,255,0.06); border-radius: 10px; aspect-ratio: 4/3; overflow: hidden; position: relative; cursor: pointer; transition: border-color .2s; }
+    .foto-slot:hover { border-color: rgba(58,155,255,0.4); }
+    .foto-slot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .foto-slot-label { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(0,0,0,0.6); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-align: center; padding: 4px; color: rgba(255,255,255,0.7); font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; }
+    .foto-slot-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 5px; color: #3A5070; font-size: 11px; }
+    .foto-slot-empty svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; }
+    .hint { font-size: 12px; color: #3A5070; text-align: center; }
+
+    .btn-download { width: 100%; max-width: 480px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 15px; border-radius: 12px; background: linear-gradient(135deg, #0C3C6E, #1554A8, #2E85E8); color: #fff; font-size: 16px; font-weight: 600; border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: filter .2s; margin-bottom: 28px; box-shadow: 0 8px 28px rgba(21,84,168,0.35); letter-spacing: 0.02em; }
+    .btn-download:hover { filter: brightness(1.12); }
+    .btn-download:disabled { opacity: .45; cursor: not-allowed; }
+
+    .preview-wrap { width: 100%; max-width: 320px; border-radius: 14px; overflow: hidden; border: 1px solid rgba(58,155,255,0.15); box-shadow: 0 24px 64px rgba(0,0,0,0.8); }
+    .preview-wrap canvas { width: 100%; display: block; }
+    #loading { text-align: center; color: #3A5070; font-size: 13px; padding: 40px; background: #0D1420; }
   </style>
 </head>
 <body>
+
   <div class="top-bar">
-    <a href="/admin"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>Volver al admin</a>
+    <a href="/admin">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Volver al admin
+    </a>
     <div class="top-title">📱 Story</div>
   </div>
+
   <div class="controls">
     <div>
       <div class="ctrl-label">Vehículo</div>
@@ -48,242 +57,313 @@
       <div class="ctrl-label">Fotos — tocá para intercambiar</div>
       <div class="fotos-row">
         <div class="foto-slot" id="slot-a" onclick="swap()">
-          <div class="foto-slot-empty" id="slot-a-empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Sin foto</div>
-          <div class="foto-slot-label">ARRIBA</div>
+          <div class="foto-slot-empty" id="slot-a-empty">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Sin foto
+          </div>
+          <div class="foto-slot-label">Arriba</div>
         </div>
         <div class="foto-slot" id="slot-b" onclick="swap()">
-          <div class="foto-slot-empty" id="slot-b-empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Sin foto</div>
-          <div class="foto-slot-label">ABAJO</div>
+          <div class="foto-slot-empty" id="slot-b-empty">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Sin foto
+          </div>
+          <div class="foto-slot-label">Abajo</div>
         </div>
       </div>
       <div class="hint">Tocá para intercambiar · Preview en tiempo real</div>
     </div>
   </div>
-  <button class="btn-dl" id="btn-dl" onclick="descargar()">⬇ Descargar Story 1080×1920</button>
+
+  <button class="btn-download" id="btn-dl" onclick="descargar()">
+    ⬇ Descargar Story 1080×1920
+  </button>
+
   <div class="preview-wrap">
     <div id="loading">Cargando…</div>
     <canvas id="cv" style="display:none"></canvas>
   </div>
 
-<script>
-const SB_URL="https://okjroggxyvwmlvowdldo.supabase.co";
-const SB_KEY="sb_publishable_wMPA_yj45_gmi0duYi6CMw_vl0jNeE8";
-const {createClient}=supabase;
-const sb=createClient(SB_URL,SB_KEY);
-const W=1080,H=1920;
-let V=null,fotos=[null,null];
+  <script>
+    const SB_URL = "https://okjroggxyvwmlvowdldo.supabase.co";
+    const SB_KEY = "sb_publishable_wMPA_yj45_gmi0duYi6CMw_vl0jNeE8";
+    const { createClient } = supabase;
+    const sb = createClient(SB_URL, SB_KEY);
 
-async function loadFonts(){
-  const loads=[
-    ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxwL3I-JCGChYJ8VI-L6OO_au7B43QTmg.woff2","900"],
-    ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B4973mhdSqmM.woff2","700"],
-    ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B46Z1mhdSqmM.woff2","500"],
-  ];
-  await Promise.all(loads.map(([url,w])=>{
-    const f=new FontFace("BC",`url(${url})`,{weight:w});
-    return f.load().then(l=>document.fonts.add(l)).catch(()=>{});
-  }));
-  await document.fonts.ready;
-}
+    const W = 1080, H = 1920;
+    let V = null, fotos = [null, null];
 
-async function loadImg(url){
-  if(!url)return null;
-  return new Promise(res=>{
-    const i=new Image();i.crossOrigin="anonymous";
-    i.onload=()=>res(i);i.onerror=()=>res(null);i.src=url;
-  });
-}
+    async function loadFonts() {
+      const pairs = [
+        ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxwL3I-JCGChYJ8VI-L6OO_au7B43LSmQ.woff2", "900"],
+        ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B4973mhdSqmM.woff2", "700"],
+        ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B46Z1mhdSqmM.woff2", "500"],
+      ];
+      await Promise.all(pairs.map(([url, w]) => {
+        const f = new FontFace("BC", `url(${url})`, { weight: w });
+        return f.load().then(loaded => document.fonts.add(loaded)).catch(() => {});
+      }));
+      await document.fonts.ready;
+    }
 
-function cover(ctx,img,x,y,w,h){
-  if(!img){ctx.fillStyle="#0A0F1E";ctx.fillRect(x,y,w,h);return;}
-  const s=Math.max(w/img.width,h/img.height);
-  const sw=img.width*s,sh=img.height*s;
-  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
-  ctx.drawImage(img,x+(w-sw)/2,y+(h-sh)/2,sw,sh);
-  ctx.restore();
-}
+    async function loadImg(url) {
+      if (!url) return null;
+      return new Promise(res => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => res(img);
+        img.onerror = () => {
+          const img2 = new Image();
+          img2.onload = () => res(img2);
+          img2.onerror = () => res(null);
+          img2.src = url;
+        };
+        img.src = url;
+      });
+    }
 
-/* Dibuja texto centrado sin letterSpacing de CSS (no funciona en canvas) */
-function txt(ctx,text,x,y){ctx.fillText(text,x,y);}
+    function cover(ctx, img, x, y, w, h) {
+      if (!img) {
+        ctx.fillStyle = "#08111E";
+        ctx.fillRect(x, y, w, h);
+        return;
+      }
+      const s = Math.max(w / img.width, h / img.height);
+      const sw = img.width * s, sh = img.height * s;
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+      ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
+      ctx.restore();
+    }
 
-/* Texto con tracking manual — espaciado entre caracteres */
-function txtTracked(ctx,text,cx,y,spacing){
-  const chars=[...text];
-  let totalW=0;
-  const ws=chars.map(c=>{const m=ctx.measureText(c);totalW+=m.width+spacing;return m.width;});
-  totalW-=spacing;
-  let px=cx-totalW/2;
-  chars.forEach((c,i)=>{ctx.fillText(c,px,y);px+=ws[i]+spacing;});
-}
+    function gradV(ctx, x, y, w, h, stops) {
+      const g = ctx.createLinearGradient(0, y, 0, y + h);
+      stops.forEach(([pos, color]) => g.addColorStop(pos, color));
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, w, h);
+    }
 
-async function render(canvas){
-  canvas.width=W;canvas.height=H;
-  const ctx=canvas.getContext("2d");
-  const v=V;
+    function roundRect(ctx, x, y, w, h, r, fill, stroke, lw) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+      ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+      ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+      ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+      ctx.closePath();
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1.5; ctx.stroke(); }
+    }
 
-  /* Fondo */
-  ctx.fillStyle="#05070C";ctx.fillRect(0,0,W,H);
+    async function render(canvas) {
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext("2d");
+      const v = V;
+      const BG = "#060A10";
+      const cx = W / 2;
+      const FONT = "BC, 'Arial Black', Arial";
 
-  /* ZONAS: foto arriba 0→740, franja 740→1180, foto abajo 1180→1920 */
-  const ZA=740,ZFY=740,ZFH=440,ZBY=1180,ZBH=740;
+      // ── Fondo base
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, W, H);
 
-  const[imgA,imgB,logo]=await Promise.all([
-    loadImg(fotos[0]),loadImg(fotos[1]),
-    loadImg("https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg")
-  ]);
+      // ── Zonas de foto
+      const TOP_H = Math.round(H * 0.62);   // foto arriba: 62%
+      const BOT_Y = Math.round(H * 0.80);   // foto abajo empieza: 80%
+      const BOT_H = H - BOT_Y;              // foto abajo: 20%
+      const MID_Y = TOP_H;
+      const MID_H = BOT_Y - TOP_H;         // bloque info: 18%
 
-  /* Foto arriba */
-  cover(ctx,imgA,0,0,W,ZA);
-  ctx.fillStyle="rgba(0,0,0,0.08)";ctx.fillRect(0,0,W,ZA);
-  const gA=ctx.createLinearGradient(0,ZA-140,0,ZA);
-  gA.addColorStop(0,"rgba(5,7,12,0)");gA.addColorStop(1,"rgba(5,7,12,1)");
-  ctx.fillStyle=gA;ctx.fillRect(0,ZA-140,W,140);
+      const [imgA, imgB] = await Promise.all([loadImg(fotos[0]), loadImg(fotos[1])]);
 
-  /* Foto abajo */
-  cover(ctx,imgB,0,ZBY,W,ZBH);
-  ctx.fillStyle="rgba(0,0,0,0.08)";ctx.fillRect(0,ZBY,W,ZBH);
-  const gB=ctx.createLinearGradient(0,ZBY,0,ZBY+140);
-  gB.addColorStop(0,"rgba(5,7,12,1)");gB.addColorStop(1,"rgba(5,7,12,0)");
-  ctx.fillStyle=gB;ctx.fillRect(0,ZBY,W,140);
+      // Foto arriba
+      cover(ctx, imgA, 0, 0, W, TOP_H);
 
-  /* Firma debajo de todo */
-  ctx.fillStyle="rgba(255,255,255,0.15)";
-  ctx.font="400 22px 'DM Sans',Arial";
-  ctx.textAlign="center";
-  ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES",W/2,H-40);
+      // Degradado oscuro inferior sobre foto arriba (suave, largo)
+      gradV(ctx, 0, TOP_H - 420, W, 420, [
+        [0, "rgba(6,10,16,0)"],
+        [0.55, "rgba(6,10,16,0.72)"],
+        [1, "rgba(6,10,16,1)"]
+      ]);
 
-  /* FRANJA — gradiente azul oscuro */
-  const gF=ctx.createLinearGradient(0,ZFY,0,ZFY+ZFH);
-  gF.addColorStop(0,"#0D2144");gF.addColorStop(1,"#091527");
-  ctx.fillStyle=gF;ctx.fillRect(0,ZFY,W,ZFH);
+      // Bloque central sólido
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, MID_Y, W, MID_H);
 
-  const cx=W/2;
-  const F="BC,'Arial Black',Arial";
+      // Foto abajo
+      cover(ctx, imgB, 0, BOT_Y, W, BOT_H);
 
-  /* === LOGO — centrado en la franja === */
-  if(logo){
-    const r=50,ly=ZFY+70;
-    ctx.save();ctx.beginPath();ctx.arc(cx,ly,r,0,Math.PI*2);ctx.clip();
-    ctx.drawImage(logo,cx-r,ly-r,r*2,r*2);ctx.restore();
-    ctx.beginPath();ctx.arc(cx,ly,r+3,0,Math.PI*2);
-    ctx.strokeStyle="rgba(58,155,255,0.4)";ctx.lineWidth=3;ctx.stroke();
-  }
+      // Degradado oscuro superior sobre foto abajo
+      gradV(ctx, 0, BOT_Y, W, Math.round(BOT_H * 0.7), [
+        [0, "rgba(6,10,16,1)"],
+        [1, "rgba(6,10,16,0)"]
+      ]);
 
-  /* === EYEBROW === */
-  ctx.fillStyle="#3A9BFF";
-  ctx.font=`600 30px ${F}`;
-  ctx.textAlign="center";
-  txtTracked(ctx,"INGRESO PARA DESARME",cx,ZFY+158,4);
+      // Degradado oscuro inferior sobre foto abajo (firma)
+      gradV(ctx, 0, H - 160, W, 160, [
+        [0, "rgba(6,10,16,0)"],
+        [1, "rgba(6,10,16,0.82)"]
+      ]);
 
-  /* === MODELO — protagonista === */
-  const modelo=(v.modelo||"").toUpperCase();
-  ctx.fillStyle="#FFFFFF";
-  let fs=116;
-  ctx.font=`900 ${fs}px ${F}`;
-  while(ctx.measureText(modelo).width>W-80&&fs>56){fs-=4;ctx.font=`900 ${fs}px ${F}`;}
-  ctx.textAlign="center";
-  txt(ctx,modelo,cx,ZFY+275);
+      // ── LOGO — esquina superior izquierda ──
+      const logoImg = await loadImg("https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg");
+      const LX = 52, LY = 52, LR = 34;
+      if (logoImg) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
+        ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
+        ctx.restore();
+        // borde sutil
+        ctx.beginPath(); ctx.arc(LX, LY, LR + 2, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(58,155,255,0.3)"; ctx.lineWidth = 2; ctx.stroke();
+      } else {
+        // fallback: diamante geométrico
+        ctx.save();
+        ctx.translate(LX, LY);
+        ctx.fillStyle = "#1554A8";
+        ctx.beginPath();
+        ctx.moveTo(0, -LR); ctx.lineTo(LR * 0.7, 0); ctx.lineTo(0, LR); ctx.lineTo(-LR * 0.7, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
 
-  /* === MARCA — debajo del modelo === */
-  ctx.fillStyle="rgba(255,255,255,0.28)";
-  ctx.font=`500 28px ${F}`;
-  txtTracked(ctx,(v.marca||"").toUpperCase(),cx,ZFY+316,6);
+      // Nombre empresa pequeño al lado del logo
+      ctx.textAlign = "left";
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      ctx.font = `600 26px ${FONT}`;
+      ctx.fillText("DESBALIZAR", LX + LR + 14, LY - 5);
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.font = `400 20px 'DM Sans', Arial`;
+      ctx.fillText("Desarmadero autorizado", LX + LR + 14, LY + 19);
 
-  /* === LÍNEA DIVISORA === */
-  const lg2=ctx.createLinearGradient(cx-300,0,cx+300,0);
-  lg2.addColorStop(0,"rgba(58,155,255,0)");
-  lg2.addColorStop(0.5,"rgba(58,155,255,0.5)");
-  lg2.addColorStop(1,"rgba(58,155,255,0)");
-  ctx.fillStyle=lg2;ctx.fillRect(cx-300,ZFY+338,600,2);
+      // ── BLOQUE INFO CENTRAL ──
+      ctx.textAlign = "center";
 
-  /* === STATS — año y km bien centrados === */
-  const stats=[];
-  if(v.anio)stats.push({val:String(v.anio),lbl:"AÑO"});
-  if(v.km)stats.push({val:Number(v.km).toLocaleString("es-AR")+" km",lbl:"KILÓMETROS"});
+      // Badge pill — INGRESO PARA DESARME
+      const badgeTxt = "INGRESO PARA DESARME";
+      ctx.font = `600 30px ${FONT}`;
+      const bW = ctx.measureText(badgeTxt).width + 56;
+      const bH = 52;
+      const bX = cx - bW / 2;
+      const bY = MID_Y + 52;
+      roundRect(ctx, bX, bY, bW, bH, bH / 2,
+        "rgba(21,84,168,0.18)",
+        "rgba(58,155,255,0.28)", 1.5);
+      // dot
+      ctx.fillStyle = "#3A9BFF";
+      ctx.beginPath(); ctx.arc(bX + 26, bY + bH / 2, 5, 0, Math.PI * 2); ctx.fill();
+      // texto
+      ctx.fillStyle = "#7AAEDE";
+      ctx.font = `600 28px ${FONT}`;
+      ctx.letterSpacing = "3px";
+      ctx.fillText(badgeTxt, cx + 6, bY + bH / 2 + 10);
+      ctx.letterSpacing = "0px";
 
-  if(stats.length===2){
-    const col=W/3;
-    /* separador vertical */
-    ctx.fillStyle="rgba(58,155,255,0.2)";
-    ctx.fillRect(cx-1,ZFY+352,2,88);
+      // Marca
+      ctx.fillStyle = "rgba(255,255,255,0.28)";
+      ctx.font = `500 42px ${FONT}`;
+      ctx.letterSpacing = "8px";
+      ctx.fillText((v.marca || "").toUpperCase(), cx, bY + bH + 74);
+      ctx.letterSpacing = "0px";
 
-    stats.forEach((s,i)=>{
-      const sx=i===0?col:col*2;
-      /* valor */
-      ctx.fillStyle="#FFFFFF";
-      ctx.font=`800 52px ${F}`;
-      ctx.textAlign="center";
-      txt(ctx,s.val.toUpperCase(),sx,ZFY+400);
-      /* label */
-      ctx.fillStyle="rgba(58,155,255,0.55)";
-      ctx.font=`500 20px ${F}`;
-      txtTracked(ctx,s.lbl,sx,ZFY+428,3);
-    });
-  } else if(stats.length===1){
-    ctx.fillStyle="#FFFFFF";
-    ctx.font=`800 52px ${F}`;
-    ctx.textAlign="center";
-    txt(ctx,stats[0].val.toUpperCase(),cx,ZFY+400);
-    ctx.fillStyle="rgba(58,155,255,0.55)";
-    ctx.font=`500 20px ${F}`;
-    txtTracked(ctx,stats[0].lbl,cx,ZFY+428,3);
-  }
-}
+      // Modelo — el protagonista
+      const modelo = (v.modelo || "").toUpperCase();
+      let fs = 148;
+      ctx.font = `900 ${fs}px ${FONT}`;
+      while (ctx.measureText(modelo).width > W - 60 && fs > 72) {
+        fs -= 4;
+        ctx.font = `900 ${fs}px ${FONT}`;
+      }
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fillText(modelo, cx, bY + bH + 74 + fs * 0.88);
 
-async function actualizarPreview(){
-  const cv=document.getElementById("cv");
-  const ld=document.getElementById("loading");
-  ld.style.display="block";cv.style.display="none";
-  await render(cv);
-  ld.style.display="none";cv.style.display="block";
-}
+      // Specs — año · km, tipografía liviana sin badges
+      const specs = [];
+      if (v.anio) specs.push(String(v.anio));
+      if (v.km) specs.push(Number(v.km).toLocaleString("es-AR") + " km");
+      if (specs.length) {
+        const specY = bY + bH + 74 + fs * 0.88 + 52;
+        ctx.fillStyle = "rgba(255,255,255,0.32)";
+        ctx.font = `400 34px 'DM Sans', Arial`;
+        ctx.letterSpacing = "2px";
+        ctx.fillText(specs.join("  ·  "), cx, specY);
+        ctx.letterSpacing = "0px";
+      }
 
-function swap(){
-  [fotos[0],fotos[1]]=[fotos[1],fotos[0]];
-  actualizarSlots();actualizarPreview();
-}
+      // ── FIRMA inferior ──
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.font = `300 22px 'DM Sans', Arial`;
+      ctx.letterSpacing = "4px";
+      ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", cx, H - 36);
+      ctx.letterSpacing = "0px";
+    }
 
-function actualizarSlots(){
-  [["a",0],["b",1]].forEach(([s,i])=>{
-    const slot=document.getElementById(`slot-${s}`);
-    const empty=document.getElementById(`slot-${s}-empty`);
-    const url=fotos[i];const old=slot.querySelector("img");
-    if(url){
-      empty.style.display="none";
-      if(old){old.src=url;}else{const img=document.createElement("img");img.src=url;slot.insertBefore(img,slot.querySelector(".foto-slot-label"));}
-    }else{empty.style.display="flex";if(old)old.remove();}
-  });
-}
+    async function actualizarPreview() {
+      const cv = document.getElementById("cv");
+      const ld = document.getElementById("loading");
+      ld.style.display = "block"; cv.style.display = "none";
+      await render(cv);
+      ld.style.display = "none"; cv.style.display = "block";
+    }
 
-async function descargar(){
-  const btn=document.getElementById("btn-dl");
-  btn.disabled=true;btn.textContent="Generando…";
-  const cv=document.createElement("canvas");
-  await render(cv);
-  const nombre=`story_${(V.marca||"").toLowerCase()}_${(V.modelo||"").toLowerCase().replace(/\s+/g,"_")}.jpg`;
-  cv.toBlob(blob=>{
-    const a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);a.download=nombre;a.click();
-    URL.revokeObjectURL(a.href);
-    btn.disabled=false;btn.textContent="⬇ Descargar Story 1080×1920";
-  },"image/jpeg",0.94);
-}
+    function swap() {
+      [fotos[0], fotos[1]] = [fotos[1], fotos[0]];
+      actualizarSlots();
+      actualizarPreview();
+    }
 
-async function init(){
-  await loadFonts();
-  const id=new URLSearchParams(location.search).get("id");
-  if(!id)return;
-  const{data}=await sb.from("vehiculos").select("*").eq("id",id).single();
-  if(!data)return;
-  V=data;
-  fotos=Array.isArray(data.fotos)?[data.fotos[0]||null,data.fotos[1]||null]:[null,null];
-  document.getElementById("ctrl-nombre").textContent=`${data.marca||""} ${data.modelo||""}`.trim();
-  const d=[data.anio,data.km?Number(data.km).toLocaleString("es-AR")+" km":null].filter(Boolean).join(" · ");
-  document.getElementById("ctrl-datos").textContent=d;
-  actualizarSlots();
-  await actualizarPreview();
-}
-init();
-</script>
+    function actualizarSlots() {
+      [["a", 0], ["b", 1]].forEach(([s, i]) => {
+        const slot = document.getElementById(`slot-${s}`);
+        const empty = document.getElementById(`slot-${s}-empty`);
+        const url = fotos[i];
+        const old = slot.querySelector("img");
+        if (url) {
+          empty.style.display = "none";
+          if (old) { old.src = url; } else {
+            const img = document.createElement("img");
+            img.src = url;
+            slot.insertBefore(img, slot.querySelector(".foto-slot-label"));
+          }
+        } else {
+          empty.style.display = "flex";
+          if (old) old.remove();
+        }
+      });
+    }
+
+    async function descargar() {
+      const btn = document.getElementById("btn-dl");
+      btn.disabled = true; btn.textContent = "Generando…";
+      const cv = document.createElement("canvas");
+      await render(cv);
+      const nombre = `story_${(V.marca||"").toLowerCase()}_${(V.modelo||"").toLowerCase().replace(/\s+/g,"_")}.jpg`;
+      cv.toBlob(blob => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = nombre; a.click();
+        URL.revokeObjectURL(a.href);
+        btn.disabled = false;
+        btn.textContent = "⬇ Descargar Story 1080×1920";
+      }, "image/jpeg", 0.95);
+    }
+
+    async function init() {
+      await loadFonts();
+      const id = new URLSearchParams(location.search).get("id");
+      if (!id) return;
+      const { data } = await sb.from("vehiculos").select("*").eq("id", id).single();
+      if (!data) return;
+      V = data;
+      fotos = Array.isArray(data.fotos) ? [data.fotos[0]||null, data.fotos[1]||null] : [null, null];
+      document.getElementById("ctrl-nombre").textContent = `${data.marca||""} ${data.modelo||""}`.trim();
+      const d = [data.anio, data.km ? Number(data.km).toLocaleString("es-AR") + " km" : null].filter(Boolean).join(" · ");
+      document.getElementById("ctrl-datos").textContent = d;
+      actualizarSlots();
+      await actualizarPreview();
+    }
+
+    init();
+  </script>
 </body>
 </html>
