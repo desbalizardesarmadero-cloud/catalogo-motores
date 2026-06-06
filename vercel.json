@@ -3,6 +3,7 @@
     { "source": "/motores", "destination": "/motores.html" },
     { "source": "/vehiculos", "destination": "/vehiculos.html" },
     { "source": "/motor", "destination": "/motor.html" },
-    { "source": "/admin", "destination": "/admin.html" }
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/links", "destination": "/links.html" }
   ]
 }
