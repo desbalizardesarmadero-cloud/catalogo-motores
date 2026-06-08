@@ -433,11 +433,13 @@
   <!-- FILTROS -->
   <div class="filters-section" id="filters-anchor">
     <div class="filters-inner">
-      <div class="chip-group">
-        <span class="chip-label">Marca:</span>
-        <div id="chips-row" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-      </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="filter-select-wrap">
+          <select class="filter-select" id="filter-marca" onchange="onMarcaSelect()">
+            <option value="">Todas las marcas</option>
+          </select>
+          <span class="select-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
         <div class="filter-select-wrap">
           <select class="filter-select" id="filter-modelo" onchange="aplicarFiltros()" style="display:none">
             <option value="">Todos los modelos</option>
@@ -543,21 +545,19 @@
 
     /* ── Filtros ── */
     function poblarFiltros() {
-      // Chips de marca
-      const row = document.getElementById("chips-row");
+      // Select de marca
+      const selMarca = document.getElementById("filter-marca");
       const conteo = {};
       todos.forEach(v => {
         const m = (v.marca || "").trim();
         if (m) conteo[m] = (conteo[m] || 0) + 1;
       });
-      row.innerHTML = "";
+      selMarca.innerHTML = '<option value="">Todas las marcas</option>';
       Object.keys(conteo).sort().forEach(marca => {
-        const btn = document.createElement("button");
-        btn.className = "chip";
-        btn.dataset.marca = marca;
-        btn.innerHTML = `${esc(marca)} <span class="chip-count">${conteo[marca]}</span>`;
-        btn.onclick = () => toggleMarca(marca);
-        row.appendChild(btn);
+        const opt = document.createElement("option");
+        opt.value = marca;
+        opt.text = `${marca} (${conteo[marca]})`;
+        selMarca.appendChild(opt);
       });
 
       // Select de años — todos al inicio
@@ -597,12 +597,10 @@
       });
     }
 
-    function toggleMarca(marca) {
-      marcaActiva = marcaActiva === marca ? "" : marca;
-      modeloActivo = ""; // resetear modelo al cambiar marca
-      document.querySelectorAll("#chips-row .chip").forEach(c =>
-        c.classList.toggle("active", c.dataset.marca === marcaActiva)
-      );
+    function onMarcaSelect() {
+      marcaActiva = document.getElementById("filter-marca").value;
+      modeloActivo = "";
+      document.getElementById("filter-modelo").value = "";
       actualizarSelectsSecundarios();
       aplicarFiltros();
     }
@@ -614,8 +612,8 @@
       document.getElementById("btn-reset").classList.toggle("visible", !!hayFiltro);
 
       filtrados = todos.filter(v => {
-        const hay = [v.marca, v.modelo, v.anio, v.observaciones]
-          .map(x => (x || "").toLowerCase()).join(" ");
+        const hay = [v.marca, v.modelo, String(v.anio||""), v.observaciones]
+          .map(x => String(x || "").toLowerCase()).join(" ");
         const txt    = !textoActivo   || hay.includes(textoActivo);
         const marca  = !marcaActiva   || (v.marca||"").trim().toLowerCase() === marcaActiva.toLowerCase();
         const modelo = !modeloActivo  || (v.modelo||"").trim() === modeloActivo;
@@ -633,11 +631,11 @@
     function resetTodo() {
       textoActivo = ""; marcaActiva = ""; anioActivo = ""; modeloActivo = "";
       document.getElementById("search-main").value = "";
+      document.getElementById("filter-marca").value = "";
       document.getElementById("filter-anio").value = "";
       document.getElementById("filter-modelo").value = "";
       document.getElementById("filter-modelo").style.display = "none";
       document.getElementById("filter-modelo").parentElement.style.display = "none";
-      document.querySelectorAll("#chips-row .chip").forEach(c => c.classList.remove("active"));
       document.getElementById("btn-reset").classList.remove("visible");
       actualizarSelectsSecundarios();
       filtrados = [...todos];
