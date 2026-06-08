@@ -1473,6 +1473,8 @@
     }
     return sel.value.trim();
   }
+
+  function cambiarTab(tab) {
     ["motores","vehiculos"].forEach(t => {
       document.getElementById(`tab-btn-${t}`).classList.toggle("active", t === tab);
       document.getElementById(`panel-${t}`).classList.toggle("active", t === tab);
