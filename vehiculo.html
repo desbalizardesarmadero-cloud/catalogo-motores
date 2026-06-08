@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vehículo — Desbalizar S.A.</title>
+  <meta name="description" content="Vehículo ingresado en Desbalizar S.A., desarmadero en Bolívar, Buenos Aires."/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --brand-blue:      #0B3C78;
+      --brand-blue-mid:  #1554A8;
+      --accent:          #3A9BFF;
+      --accent-warm:     #F0A500;
+      --dark-900:        #0A0D14;
+      --dark-800:        #10141F;
+      --dark-700:        #161C2E;
+      --dark-600:        #1F2840;
+      --dark-500:        #2A3450;
+      --dark-400:        #3C4A68;
+      --text-primary:    #EDF2FF;
+      --text-secondary:  #9BADC8;
+      --text-muted:      #5E7299;
+      --white:           #FFFFFF;
+      --success:         #22C55E;
+      --transition:      0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--dark-900); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+    img { display: block; max-width: 100%; }
+    a { text-decoration: none; color: inherit; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03; pointer-events: none; z-index: 0;
+    }
+
+    /* HEADER */
+    .site-header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10,13,20,0.92); backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(58,155,255,0.12);
+      padding: 0 clamp(16px,4vw,64px);
+    }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .header-logo-img { height: 44px; width: auto; object-fit: contain; filter: drop-shadow(0 0 10px rgba(58,155,255,0.25)); }
+    .btn-back {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; background: rgba(58,155,255,0.07);
+      border: 1px solid rgba(58,155,255,0.18); border-radius: 10px;
+      font-size: 13px; font-weight: 500; color: var(--accent);
+      transition: all var(--transition);
+    }
+    .btn-back:hover { background: rgba(58,155,255,0.14); border-color: rgba(58,155,255,0.35); }
+    .btn-back svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+    /* LOADING */
+    .page-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 20px; }
+    .spinner { width: 52px; height: 52px; border-radius: 50%; border: 3px solid rgba(58,155,255,0.15); border-top-color: var(--accent); animation: spin .85s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text { font-size: 14px; color: var(--text-muted); letter-spacing: .1em; text-transform: uppercase; }
+
+    /* LAYOUT */
+    .page-main {
+      max-width: 1400px; margin: 0 auto;
+      padding: 16px clamp(16px,3vw,40px) 100px;
+      display: grid; grid-template-columns: 3fr 2fr;
+      gap: clamp(20px,3vw,36px); align-items: start;
+    }
+    @media (max-width: 820px) { .page-main { grid-template-columns: 1fr; } }
+
+    /* CARRUSEL */
+    .carousel-section {
+      position: sticky; top: 68px;
+      height: auto;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+
+    .carousel-main {
+      position: relative; border-radius: 14px; overflow: hidden;
+      background: var(--dark-700); border: 1px solid rgba(58,155,255,0.1);
+      width: 100%; aspect-ratio: 4/3; flex-shrink: 0;
+    }
+    @media (max-width: 820px) { .carousel-main { width: 100%; aspect-ratio: 4/3; } }
+
+    .carousel-main-img { width: 100%; height: 100%; display: block; object-fit: cover; transition: opacity .28s ease; cursor: zoom-in; }
+
+    .carousel-thumbs {
+      display: flex; flex-direction: row; gap: 6px;
+      overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+      width: 100%; height: auto;
+    }
+    .carousel-thumbs::-webkit-scrollbar { display: none; }
+
+    .carousel-thumb {
+      width: 90px; height: 68px; border-radius: 8px; object-fit: cover;
+      cursor: pointer; border: 2px solid transparent; opacity: 0.5; flex-shrink: 0;
+      transition: all var(--transition);
+    }
+    .carousel-thumb.active, .carousel-thumb:hover { opacity: 1; border-color: var(--accent-warm); }
+
+    .carousel-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); font-size: 13px; }
+    .carousel-placeholder svg { width: 48px; height: 48px; stroke: var(--dark-400); fill: none; stroke-width: 1.4; }
+
+    /* PANEL INFO */
+    .info-panel { display: flex; flex-direction: column; gap: 24px; }
+
+    .breadcrumb { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .breadcrumb a { color: var(--accent-warm); transition: color var(--transition); }
+    .breadcrumb a:hover { color: var(--white); }
+    .breadcrumb-sep { color: var(--dark-400); }
+
+    .veh-brand {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(13px,1.8vw,16px); font-weight: 600;
+      text-transform: uppercase; color: var(--accent-warm); letter-spacing: .12em; margin-bottom: 4px;
+    }
+    .veh-model {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(40px,7vw,64px); font-weight: 800;
+      text-transform: uppercase; line-height: .95; color: var(--white); letter-spacing: .01em;
+    }
+
+    .badge-ingresado {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.3);
+      border-radius: 999px; padding: 5px 14px;
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--accent-warm); width: fit-content;
+    }
+    .badge-ingresado::before {
+      content: ''; width: 7px; height: 7px;
+      background: var(--accent-warm); border-radius: 50%; flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(240,165,0,0.8); animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .spec-card {
+      background: var(--dark-700); border: 1px solid rgba(58,155,255,0.08);
+      border-radius: 12px; padding: 14px 16px; transition: border-color var(--transition);
+    }
+    .spec-card:hover { border-color: rgba(240,165,0,0.2); }
+    .spec-card-label { font-size: 10px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; }
+    .spec-card-value { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+
+    .section-block { background: var(--dark-800); border: 1px solid rgba(58,155,255,0.07); border-radius: 14px; padding: 20px; }
+    .section-block-title {
+      font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: .15em; text-transform: uppercase; color: var(--accent-warm);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-block-title::before { content: ''; width: 3px; height: 16px; background: var(--accent-warm); border-radius: 2px; flex-shrink: 0; }
+    .obs-text { font-size: 14px; line-height: 1.7; color: var(--text-secondary); }
+
+    .rudac-block {
+      background: linear-gradient(135deg, rgba(11,60,120,0.25) 0%, rgba(21,84,168,0.12) 100%);
+      border: 1px solid rgba(58,155,255,0.15); border-radius: 14px; padding: 20px;
+    }
+    .rudac-intro { font-size: 13px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 16px; }
+    .rudac-items { display: flex; flex-direction: column; gap: 10px; }
+    .rudac-item { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .rudac-check { width: 22px; height: 22px; background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .rudac-check svg { width: 12px; height: 12px; stroke: #4ADE80; fill: none; stroke-width: 2.5; }
+
+    /* WA STICKY */
+    .wa-sticky {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      padding: 12px 20px 16px;
+      background: linear-gradient(to top, rgba(8,10,18,1) 60%, rgba(8,10,18,0));
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      pointer-events: none;
+    }
+    .wa-sticky a {
+      pointer-events: all;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; max-width: 480px; padding: 15px 20px;
+      background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
+      border-radius: 14px; font-size: 16px; font-weight: 700; color: #fff;
+      letter-spacing: .04em; text-decoration: none;
+      box-shadow: 0 8px 28px rgba(37,211,102,0.35); transition: all var(--transition);
+      font-family: 'DM Sans', sans-serif;
+    }
+    .wa-sticky a:hover { transform: translateY(-2px); box-shadow: 0 12px 36px rgba(37,211,102,0.5); }
+    .wa-sticky a svg { width: 22px; height: 22px; fill: currentColor; flex-shrink: 0; }
+    .wa-sticky-nota { font-size: 10px; color: rgba(255,255,255,0.4); letter-spacing: .05em; pointer-events: none; }
+
+    /* FOOTER */
+    .site-footer { background: var(--dark-800); border-top: 1px solid rgba(58,155,255,0.08); padding: 32px clamp(16px,4vw,64px); text-align: center; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-logo { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: .08em; color: var(--white); text-transform: uppercase; margin-bottom: 4px; }
+    .footer-sub { font-size: 12px; color: var(--text-muted); }
+    .footer-divider { margin: 20px 0; border: none; border-top: 1px solid rgba(58,155,255,0.07); }
+    .footer-copy { font-size: 12px; color: var(--dark-400); }
+
+    /* FULLSCREEN VIEWER */
+    .img-viewer {
+      position: fixed; inset: 0; z-index: 999;
+      background: rgba(0,0,0,0.95); display: none;
+      align-items: center; justify-content: center;
+    }
+    .img-viewer.open { display: flex; }
+    .img-viewer img { max-width: 95vw; max-height: 95vh; border-radius: 8px; object-fit: contain; }
+    .img-viewer-close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.1); color: #fff; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); transition: background var(--transition); }
+    .img-viewer-close:hover { background: rgba(255,255,255,0.2); }
+
+    /* MODAL PIEZA */
+    .pieza-modal {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .pieza-modal.open { display: flex; }
+    .pieza-box {
+      background: var(--dark-800);
+      border: 1px solid rgba(58,155,255,0.15);
+      border-radius: 20px; padding: 32px 28px;
+      width: 100%; max-width: 440px;
+      display: flex; flex-direction: column; gap: 20px;
+      animation: modalUp .25s ease;
+    }
+    @keyframes modalUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+    .pieza-box-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 24px; font-weight: 800; text-transform: uppercase;
+      color: var(--white); line-height: 1;
+    }
+    .pieza-box-sub { font-size: 13px; color: var(--text-secondary); margin-top: -12px; line-height: 1.5; }
+
+    .pieza-vehiculo-info {
+      background: var(--dark-700); border-radius: 10px; padding: 12px 14px;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    .pieza-vehiculo-info strong { color: var(--white); display: block; font-size: 15px; margin-bottom: 2px; }
+
+    .pieza-input {
+      width: 100%; padding: 14px 16px;
+      background: var(--dark-700); border: 1px solid rgba(58,155,255,0.2);
+      border-radius: 12px; color: var(--text-primary);
+      font-size: 15px; font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border-color var(--transition);
+    }
+    .pieza-input:focus { border-color: rgba(58,155,255,0.5); }
+    .pieza-input::placeholder { color: var(--text-muted); }
+
+    .pieza-sugerencias {
+      display: flex; flex-wrap: wrap; gap: 6px; margin-top: -10px;
+    }
+    .pieza-chip {
+      padding: 5px 12px; border-radius: 99px;
+      background: var(--dark-700); border: 1px solid rgba(58,155,255,0.12);
+      font-size: 12px; color: var(--text-secondary);
+      cursor: pointer; transition: all var(--transition);
+    }
+    .pieza-chip:hover { background: rgba(58,155,255,0.1); border-color: rgba(58,155,255,0.35); color: var(--white); }
+
+    .pieza-actions { display: flex; gap: 10px; }
+    .pieza-btn-cancel {
+      padding: 13px 20px; border-radius: 10px;
+      background: var(--dark-700); border: 1px solid rgba(255,255,255,0.1);
+      font-size: 14px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; transition: all var(--transition); font-family: 'DM Sans', sans-serif;
+    }
+    .pieza-btn-cancel:hover { color: var(--white); }
+    .pieza-btn-wa {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 13px 20px; border-radius: 10px;
+      background: linear-gradient(135deg, #128C7E 0%, #25D366 100%);
+      font-size: 15px; font-weight: 700; color: #fff;
+      cursor: pointer; transition: all var(--transition); font-family: 'DM Sans', sans-serif;
+      box-shadow: 0 4px 16px rgba(37,211,102,0.3); border: none;
+    }
+    .pieza-btn-wa:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .pieza-btn-wa svg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--dark-900); }
+    ::-webkit-scrollbar-thumb { background: var(--dark-500); border-radius: 3px; }
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="/">
+        <img class="header-logo-img" src="https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg" alt="Desbalizar S.A."/>
+      </a>
+      <a class="btn-back" href="/vehiculos">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Volver al catálogo
+      </a>
+    </div>
+  </header>
+
+  <main id="page-content">
+    <div class="page-loading">
+      <div class="spinner"></div>
+      <div class="loading-text">Cargando vehículo…</div>
+    </div>
+  </main>
+
+  <div class="img-viewer" id="img-viewer" onclick="cerrarViewer(event)">
+    <button class="img-viewer-close" onclick="cerrarViewer()">✕</button>
+    <img id="img-viewer-img" src="" alt="Foto ampliada"/>
+  </div>
+
+  <!-- MODAL PIEZA -->
+  <div class="pieza-modal" id="pieza-modal" onclick="clickFueraPieza(event)">
+    <div class="pieza-box">
+      <div>
+        <div class="pieza-box-title">¿Qué pieza buscás?</div>
+        <div class="pieza-box-sub">Tu consulta va a llegar con todos los datos del vehículo.</div>
+      </div>
+      <div class="pieza-vehiculo-info">
+        <strong id="modal-veh-nombre">—</strong>
+        <span id="modal-veh-anio"></span>
+      </div>
+      <input class="pieza-input" id="pieza-input" type="text"
+        placeholder="Ej: paragolpes delantero, puerta trasera…"
+        onkeydown="if(event.key==='Enter') enviarConsulta()"/>
+      <div class="pieza-sugerencias" id="pieza-sugerencias"></div>
+      <div class="pieza-actions">
+        <button class="pieza-btn-cancel" onclick="cerrarModalPieza()">Cancelar</button>
+        <button class="pieza-btn-wa" onclick="enviarConsulta()">
+          <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.541 4.063 1.487 5.776L.057 23.428a.5.5 0 0 0 .609.61l5.724-1.43A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.524-5.183-1.432l-.371-.22-3.849.962.979-3.773-.242-.386A9.961 9.961 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          Consultar por WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-logo">Desbalizar S.A.</div>
+      <div class="footer-sub">Desarmadero automotor · Bolívar, Buenos Aires</div>
+      <hr class="footer-divider"/>
+      <div class="footer-copy">© 2025 Desbalizar S.A. · Santiago del Estero 910, Bolívar · 2314 545224</div>
+    </div>
+  </footer>
+
+  <script>
+    const SUPABASE_URL = "https://okjroggxyvwmlvowdldo.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_wMPA_yj45_gmi0duYi6CMw_vl0jNeE8";
+    const WA_NUM = "542314545224";
+    const { createClient } = supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let vehiculoActual = null; // guardamos el vehículo para el modal
+
+    function esc(s) { return s == null ? "" : String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+    function fmtKm(n) { const v = Number(n); return isNaN(v)||n==null ? null : v.toLocaleString("es-AR") + " km"; }
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id");
+
+    let fotosArr = [];
+    let fotoActual = 0;
+
+    async function cargar() {
+      if (!id) { mostrarError("ID no encontrado."); return; }
+      try {
+        const { data, error } = await sb.from("vehiculos").select("*").eq("id", id).single();
+        if (error || !data) throw error || new Error("No encontrado");
+        renderizar(data);
+      } catch(e) { mostrarError("No se pudo cargar el vehículo."); }
+    }
+
+    function mostrarError(msg) {
+      document.getElementById("page-content").innerHTML = `
+        <div class="page-loading">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;color:#F87171">${esc(msg)}</div>
+          <a href="/vehiculos" style="color:var(--accent-warm);font-size:14px">← Volver al catálogo</a>
+        </div>`;
+    }
+
+    function renderizar(v) {
+      vehiculoActual = v;
+      fotosArr = Array.isArray(v.fotos) ? v.fotos.filter(Boolean) : [];
+      const km = fmtKm(v.km);
+      const waMsg = `Hola, vi el ${v.marca||""} ${v.modelo||""}${v.anio?" "+v.anio:""} en el catálogo de Desbalizar. ¿Qué piezas tienen disponibles?`;
+      const waUrl = `https://wa.me/${WA_NUM}?text=${encodeURIComponent(waMsg)}`;
+
+      document.title = `${v.marca||""} ${v.modelo||""} — Desbalizar S.A.`;
+
+      const tieneThumbsSuficientes = fotosArr.length > 1;
+
+      document.getElementById("page-content").innerHTML = `
+        <div class="page-main">
+
+          <!-- CARRUSEL -->
+          <div class="carousel-section">
+            <div class="carousel-main">
+              ${fotosArr.length > 0
+                ? `<img class="carousel-main-img" id="main-img" src="${esc(fotosArr[0])}" alt="${esc(v.marca)} ${esc(v.modelo)}" onclick="abrirViewer(${0})"/>`
+                : `<div class="carousel-placeholder"><svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/><rect x="9" y="11" width="14" height="10" rx="1"/></svg><span>Sin fotos</span></div>`
+              }
+              ${fotosArr.length > 1 ? `
+              <button class="carousel-btn prev" onclick="cambiarFoto(-1)"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <button class="carousel-btn next" onclick="cambiarFoto(1)"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+              <div class="carousel-counter" id="counter">1 / ${fotosArr.length}</div>` : ""}
+            </div>
+            ${tieneThumbsSuficientes ? `
+            <div class="carousel-thumbs" id="thumbs-col">
+              ${fotosArr.map((f,i)=>`<img class="carousel-thumb${i===0?" active":""}" src="${esc(f)}" alt="Foto ${i+1}" onclick="irAFoto(${i})"/>`).join("")}
+            </div>` : ""}
+          </div>
+
+          <!-- INFO -->
+          <div class="info-panel">
+            <div class="breadcrumb">
+              <a href="/vehiculos">Vehículos ingresados</a>
+              <span class="breadcrumb-sep">›</span>
+              <span>${esc(v.marca)||"Vehículo"}</span>
+            </div>
+
+            <div>
+              <div class="veh-brand">${esc(v.marca)||""}</div>
+              <div class="veh-model">${esc(v.modelo)||"Vehículo"}</div>
+            </div>
+
+            <div class="badge-ingresado">Ingresado · Disponible para piezas</div>
+
+            <div class="specs-grid">
+              ${v.anio ? `<div class="spec-card"><div class="spec-card-label">Año</div><div class="spec-card-value">${esc(v.anio)}</div></div>` : ""}
+              ${km ? `<div class="spec-card"><div class="spec-card-label">Kilómetros</div><div class="spec-card-value">${km}</div></div>` : ""}
+            </div>
+
+            ${v.observaciones ? `
+            <div class="section-block">
+              <div class="section-block-title">Observaciones</div>
+              <div class="obs-text">${esc(v.observaciones)}</div>
+            </div>` : ""}
+
+            <div class="rudac-block">
+              <div class="rudac-intro">Desbalizar S.A. es un desarmadero automotor avalado por el RUDAC. Todas las piezas cuentan con documentación respaldatoria.</div>
+              <div class="rudac-items">
+                <div class="rudac-item"><div class="rudac-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Documentación respaldatoria</div>
+                <div class="rudac-item"><div class="rudac-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Desarmadero avalado por RUDAC</div>
+                <div class="rudac-item"><div class="rudac-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Envíos a todo el país</div>
+                <div class="rudac-item"><div class="rudac-check"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>Atención rápida por WhatsApp</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="wa-sticky">
+          <button onclick="abrirModalPieza()" style="pointer-events:all;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:480px;padding:15px 20px;background:linear-gradient(135deg,#128C7E 0%,#25D366 100%);border-radius:14px;font-size:16px;font-weight:700;color:#fff;letter-spacing:.04em;box-shadow:0 8px 28px rgba(37,211,102,0.35);transition:all var(--transition);font-family:'DM Sans',sans-serif;border:none;cursor:pointer;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.521.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.521-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.096.541 4.063 1.487 5.776L.057 23.428a.5.5 0 0 0 .609.61l5.724-1.43A11.946 11.946 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.524-5.183-1.432l-.371-.22-3.849.962.979-3.773-.242-.386A9.961 9.961 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+            Consultar disponibilidad por WhatsApp
+          </button>
+          <div class="wa-sticky-nota">Te preguntamos qué pieza buscás antes de abrir WhatsApp</div>
+        </div>`;
+    }
+
+    function cambiarFoto(dir) {
+      fotoActual = (fotoActual + dir + fotosArr.length) % fotosArr.length;
+      irAFoto(fotoActual);
+    }
+
+    function irAFoto(i) {
+      fotoActual = i;
+      const img = document.getElementById("main-img");
+      const counter = document.getElementById("counter");
+      const thumbs = document.querySelectorAll(".carousel-thumb");
+      if (img) { img.style.opacity = "0"; setTimeout(() => { img.src = fotosArr[i]; img.style.opacity = "1"; img.onclick = () => abrirViewer(i); }, 120); }
+      if (counter) counter.textContent = `${i+1} / ${fotosArr.length}`;
+      thumbs.forEach((t,idx) => t.classList.toggle("active", idx===i));
+      document.querySelectorAll(".carousel-thumbs img")[i]?.scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
+
+    function abrirViewer(i) {
+      const viewer = document.getElementById("img-viewer");
+      document.getElementById("img-viewer-img").src = fotosArr[i];
+      viewer.classList.add("open");
+    }
+    function cerrarViewer(e) {
+      if (!e || e.target === document.getElementById("img-viewer") || e.target === document.querySelector(".img-viewer-close")) {
+        document.getElementById("img-viewer").classList.remove("open");
+      }
+    }
+
+    /* ── MODAL PIEZA ── */
+    const SUGERENCIAS = [
+      "Motor", "Caja de cambios", "Paragolpes delantero", "Paragolpes trasero",
+      "Puerta delantera", "Puerta trasera", "Capot", "Tapa de baúl",
+      "Alternador", "Burro de arranque", "Radiador", "Airbag",
+      "Tablero / torpedo", "Volante", "Compresor de aire", "Palier"
+    ];
+
+    function abrirModalPieza() {
+      if (!vehiculoActual) return;
+      const v = vehiculoActual;
+      document.getElementById("modal-veh-nombre").textContent =
+        `${v.marca || ""} ${v.modelo || ""}`.trim();
+      document.getElementById("modal-veh-anio").textContent =
+        v.anio ? `Año ${v.anio}` : "";
+
+      // Chips de sugerencias
+      const cont = document.getElementById("pieza-sugerencias");
+      cont.innerHTML = "";
+      SUGERENCIAS.forEach(s => {
+        const chip = document.createElement("button");
+        chip.className = "pieza-chip";
+        chip.textContent = s;
+        chip.onclick = () => {
+          document.getElementById("pieza-input").value = s;
+          document.getElementById("pieza-input").focus();
+        };
+        cont.appendChild(chip);
+      });
+
+      document.getElementById("pieza-input").value = "";
+      document.getElementById("pieza-modal").classList.add("open");
+      setTimeout(() => document.getElementById("pieza-input").focus(), 200);
+    }
+
+    function cerrarModalPieza() {
+      document.getElementById("pieza-modal").classList.remove("open");
+    }
+
+    function clickFueraPieza(e) {
+      if (e.target === document.getElementById("pieza-modal")) cerrarModalPieza();
+    }
+
+    function enviarConsulta() {
+      if (!vehiculoActual) return;
+      const v = vehiculoActual;
+      const pieza = document.getElementById("pieza-input").value.trim();
+      let msg = `Hola, vi el ${v.marca||""} ${v.modelo||""}${v.anio?" ("+v.anio+")":""} en el catálogo de Desbalizar.`;
+      if (pieza) {
+        msg += ` Estoy buscando: *${pieza}*. ¿Lo tienen disponible?`;
+      } else {
+        msg += ` ¿Qué piezas tienen disponibles?`;
+      }
+      window.open(`https://wa.me/${WA_NUM}?text=${encodeURIComponent(msg)}`, "_blank");
+      cerrarModalPieza();
+    }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "Escape") { cerrarModalPieza(); cerrarViewer(); }
+    });
+
+    cargar();
+  </script>
+</body>
+</html>
