@@ -180,7 +180,7 @@
       position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
       padding: 12px 20px 16px;
       background: linear-gradient(to top, rgba(8,10,18,1) 60%, rgba(8,10,18,0));
-      display: none; flex-direction: column; align-items: center; gap: 4px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
       pointer-events: none;
     }
     .wa-sticky a {
@@ -473,6 +473,14 @@
             </div>
 
             <div class="badge-ingresado">Ingresado · Disponible para piezas</div>
+
+            <div style="background:rgba(58,155,255,0.06);border:1px solid rgba(58,155,255,0.2);border-radius:12px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+              <span style="font-size:20px;flex-shrink:0;">⚠️</span>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:3px;">Solo venta de piezas</div>
+                <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Este vehículo ingresó al desarmadero para su desarme. <strong style="color:var(--white);">No se vende completo.</strong> Consultanos qué piezas necesitás.</div>
+              </div>
+            </div>
 
             <div class="specs-grid">
               ${v.anio ? `<div class="spec-card"><div class="spec-card-label">Año</div><div class="spec-card-value">${esc(v.anio)}</div></div>` : ""}
