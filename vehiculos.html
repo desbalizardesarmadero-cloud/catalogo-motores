@@ -420,6 +420,16 @@
     </div>
   </div>
 
+  <!-- AVISO DESARME -->
+  <div style="max-width:1400px;margin:16px auto 0;padding:0 clamp(16px,4vw,64px)">
+    <div style="background:rgba(58,155,255,0.05);border:1px solid rgba(58,155,255,0.18);border-radius:12px;padding:12px 18px;display:flex;gap:12px;align-items:center;">
+      <span style="font-size:18px;flex-shrink:0;">⚠️</span>
+      <div style="font-size:13px;color:#9BADC8;line-height:1.5;">
+        <strong style="color:#EDF2FF;">Estos vehículos son para desarme.</strong> No se venden completos — solo se comercializan sus piezas. Consultanos lo que necesitás.
+      </div>
+    </div>
+  </div>
+
   <!-- FILTROS -->
   <div class="filters-section" id="filters-anchor">
     <div class="filters-inner">
@@ -427,11 +437,19 @@
         <span class="chip-label">Marca:</span>
         <div id="chips-row" style="display:flex;gap:6px;flex-wrap:wrap"></div>
       </div>
-      <div class="filter-select-wrap">
-        <select class="filter-select" id="filter-anio" onchange="aplicarFiltros()">
-          <option value="">Todos los años</option>
-        </select>
-        <span class="select-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="filter-select-wrap">
+          <select class="filter-select" id="filter-modelo" onchange="aplicarFiltros()" style="display:none">
+            <option value="">Todos los modelos</option>
+          </select>
+          <span class="select-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
+        <div class="filter-select-wrap">
+          <select class="filter-select" id="filter-anio" onchange="aplicarFiltros()">
+            <option value="">Todos los años</option>
+          </select>
+          <span class="select-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></span>
+        </div>
       </div>
     </div>
   </div>
@@ -486,7 +504,7 @@
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let todos = [], filtrados = [];
-    let marcaActiva = "", textoActivo = "", anioActivo = "";
+    let marcaActiva = "", textoActivo = "", anioActivo = "", modeloActivo = "";
 
     function esc(s) {
       if (!s) return "";
@@ -542,36 +560,67 @@
         row.appendChild(btn);
       });
 
-      // Select de años
-      const sel = document.getElementById("filter-anio");
-      const años = [...new Set(todos.map(v => v.anio).filter(Boolean))].sort((a, b) => b - a);
+      // Select de años — todos al inicio
+      actualizarSelectsSecundarios();
+    }
+
+    function actualizarSelectsSecundarios() {
+      // Filtrar la base según marca activa
+      const base = marcaActiva
+        ? todos.filter(v => (v.marca||"").trim().toLowerCase() === marcaActiva.toLowerCase())
+        : todos;
+
+      // Modelos
+      const selModelo = document.getElementById("filter-modelo");
+      const modeloActual = selModelo.value;
+      selModelo.innerHTML = '<option value="">Todos los modelos</option>';
+      const modelos = [...new Set(base.map(v => v.modelo).filter(Boolean))].sort();
+      modelos.forEach(m => {
+        const opt = document.createElement("option");
+        opt.value = m; opt.text = m;
+        if (m === modeloActual) opt.selected = true;
+        selModelo.appendChild(opt);
+      });
+      selModelo.style.display = marcaActiva && modelos.length > 1 ? "block" : "none";
+      selModelo.parentElement.style.display = marcaActiva && modelos.length > 1 ? "block" : "none";
+
+      // Años
+      const selAnio = document.getElementById("filter-anio");
+      const anioActual = selAnio.value;
+      selAnio.innerHTML = '<option value="">Todos los años</option>';
+      const años = [...new Set(base.map(v => v.anio).filter(Boolean))].sort((a,b) => b - a);
       años.forEach(a => {
         const opt = document.createElement("option");
         opt.value = a; opt.text = a;
-        sel.appendChild(opt);
+        if (String(a) === anioActual) opt.selected = true;
+        selAnio.appendChild(opt);
       });
     }
 
     function toggleMarca(marca) {
       marcaActiva = marcaActiva === marca ? "" : marca;
+      modeloActivo = ""; // resetear modelo al cambiar marca
       document.querySelectorAll("#chips-row .chip").forEach(c =>
         c.classList.toggle("active", c.dataset.marca === marcaActiva)
       );
+      actualizarSelectsSecundarios();
       aplicarFiltros();
     }
 
     function aplicarFiltros() {
-      anioActivo = document.getElementById("filter-anio").value;
-      const hayFiltro = textoActivo || marcaActiva || anioActivo;
+      anioActivo   = document.getElementById("filter-anio").value;
+      modeloActivo = document.getElementById("filter-modelo").value;
+      const hayFiltro = textoActivo || marcaActiva || anioActivo || modeloActivo;
       document.getElementById("btn-reset").classList.toggle("visible", !!hayFiltro);
 
       filtrados = todos.filter(v => {
         const hay = [v.marca, v.modelo, v.anio, v.observaciones]
           .map(x => (x || "").toLowerCase()).join(" ");
-        const txt = !textoActivo || hay.includes(textoActivo);
-        const marca = !marcaActiva || (v.marca || "").trim().toLowerCase() === marcaActiva.toLowerCase();
-        const anio = !anioActivo || String(v.anio) === anioActivo;
-        return txt && marca && anio;
+        const txt    = !textoActivo   || hay.includes(textoActivo);
+        const marca  = !marcaActiva   || (v.marca||"").trim().toLowerCase() === marcaActiva.toLowerCase();
+        const modelo = !modeloActivo  || (v.modelo||"").trim() === modeloActivo;
+        const anio   = !anioActivo    || String(v.anio) === anioActivo;
+        return txt && marca && modelo && anio;
       });
       renderizar(filtrados);
     }
@@ -582,11 +631,15 @@
     }
 
     function resetTodo() {
-      textoActivo = ""; marcaActiva = ""; anioActivo = "";
+      textoActivo = ""; marcaActiva = ""; anioActivo = ""; modeloActivo = "";
       document.getElementById("search-main").value = "";
       document.getElementById("filter-anio").value = "";
+      document.getElementById("filter-modelo").value = "";
+      document.getElementById("filter-modelo").style.display = "none";
+      document.getElementById("filter-modelo").parentElement.style.display = "none";
       document.querySelectorAll("#chips-row .chip").forEach(c => c.classList.remove("active"));
       document.getElementById("btn-reset").classList.remove("visible");
+      actualizarSelectsSecundarios();
       filtrados = [...todos];
       renderizar(filtrados);
     }
