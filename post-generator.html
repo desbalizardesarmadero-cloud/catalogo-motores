@@ -155,7 +155,7 @@
     async function render(canvas) {
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext("2d");
-      const v = V;
+      const v   = V;
       const cx  = W / 2;
       const BC  = "BC, 'Arial Black', Arial";
       const DM  = "'DM Sans', Arial";
@@ -166,7 +166,9 @@
       const BLANCO   = "#FFFFFF";
       const NEGRO    = "#101010";
 
-      // Fondo blanco
+      const hasTwo = !!(fotos[0] && fotos[1]);
+
+      // Fondo blanco base
       ctx.fillStyle = BLANCO;
       ctx.fillRect(0, 0, W, H);
 
@@ -176,41 +178,113 @@
         loadImg(LOGO_URL),
       ]);
 
-      // ── FOTO PRINCIPAL: 70% superior (850px) ──
-      const FOTO_H = 850;
-      cover(ctx, imgA, 0, 0, W, FOTO_H);
+      let FOTO_H; // altura total ocupada por foto(s)
 
-      // Degradado inferior sobre foto para legibilidad del texto
-      gradV(ctx, 0, FOTO_H - 320, W, 320, [
-        [0, "rgba(0,0,0,0)"],
-        [1, "rgba(0,0,0,0.72)"]
-      ]);
+      if (hasTwo) {
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // CASO 2: DOS FOTOS — diseño apilado vertical
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        FOTO_H = 760;
+        const midY = FOTO_H / 2; // 380
 
-      // ── SEGUNDA FOTO pequeña superpuesta esquina inferior derecha ──
-      if (imgB) {
-        ctx.save();
-        roundRect(ctx, W - 300, FOTO_H - 220, 240, 170, 18, BLANCO);
-        ctx.restore();
-        cover(ctx, imgB, W - 290, FOTO_H - 210, 220, 150);
-        // borde
-        ctx.strokeStyle = BLANCO;
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.roundRect(W - 290, FOTO_H - 210, 220, 150, 14);
-        ctx.stroke();
+        // Foto 1 — mitad superior
+        cover(ctx, imgA, 0, 0, W, midY);
+
+        // Foto 2 — mitad inferior
+        cover(ctx, imgB, 0, midY, W, midY);
+
+        // Línea divisoria sutil
+        ctx.fillStyle = BLANCO;
+        ctx.fillRect(0, midY - 2, W, 4);
+
+        // Banda oscura translúcida entre las dos fotos con marca/modelo
+        const BAND_H = 90;
+        const BAND_Y = midY - BAND_H / 2;
+        ctx.fillStyle = "rgba(0,0,0,0.58)";
+        ctx.fillRect(0, BAND_Y, W, BAND_H);
+
+        // Marca y modelo centrados en la banda
+        ctx.textAlign = "center";
+        ctx.fillStyle = BLANCO;
+
+        // Calcular tamaños para que quepan en la banda
+        const marcaStr  = (v.marca  || "").toUpperCase();
+        const modeloStr = (v.modelo || "").toUpperCase();
+        const ambos = marcaStr + "  " + modeloStr;
+
+        let bfs = 52;
+        ctx.font = `900 ${bfs}px ${BC}`;
+        while (ctx.measureText(ambos).width > W - 80 && bfs > 28) {
+          bfs -= 2;
+          ctx.font = `900 ${bfs}px ${BC}`;
+        }
+
+        // Si caben en una línea, una línea; si no, dos
+        if (ctx.measureText(ambos).width <= W - 80) {
+          ctx.fillText(ambos, cx, BAND_Y + BAND_H / 2 + bfs * 0.35);
+        } else {
+          let fs2 = 42;
+          ctx.font = `900 ${fs2}px ${BC}`;
+          while (ctx.measureText(modeloStr).width > W - 80 && fs2 > 24) {
+            fs2 -= 2;
+            ctx.font = `900 ${fs2}px ${BC}`;
+          }
+          ctx.fillStyle = AMARILLO;
+          ctx.font = `900 ${fs2}px ${BC}`;
+          ctx.fillText(marcaStr, cx, BAND_Y + 30 + fs2 * 0.5);
+          ctx.fillStyle = BLANCO;
+          ctx.fillText(modeloStr, cx, BAND_Y + BAND_H - 12);
+        }
+
+      } else {
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // CASO 1: UNA SOLA FOTO — diseño hero
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        FOTO_H = 850;
+        cover(ctx, imgA, 0, 0, W, FOTO_H);
+
+        // Degradado inferior sobre foto
+        gradV(ctx, 0, FOTO_H - 340, W, 340, [
+          [0, "rgba(0,0,0,0)"],
+          [1, "rgba(0,0,0,0.75)"]
+        ]);
+
+        // Marca y modelo sobre la foto
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,.7)";
+        ctx.shadowBlur  = 20;
+
+        ctx.fillStyle = AMARILLO;
+        ctx.font      = `900 105px ${BC}`;
+        ctx.fillText((v.marca || "").toUpperCase(), cx, FOTO_H - 160);
+
+        let mfs = 82;
+        ctx.font = `800 ${mfs}px ${BC}`;
+        const modeloStr = (v.modelo || "").toUpperCase();
+        while (ctx.measureText(modeloStr).width > W - 80 && mfs > 46) {
+          mfs -= 3;
+          ctx.font = `800 ${mfs}px ${BC}`;
+        }
+        ctx.fillStyle = BLANCO;
+        ctx.fillText(modeloStr, cx, FOTO_H - 70);
+        ctx.shadowBlur = 0;
       }
 
-      // ── PATENTE / DOMINIO arriba izquierda ──
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ELEMENTOS COMUNES (sobre foto, ambos casos)
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+      // Dominio / patente arriba izquierda
       const dominio = v.dominio || v.rudac || "";
       if (dominio) {
         roundRect(ctx, 40, 40, 260, 90, 12, BLANCO, "#D9D9D9");
         ctx.fillStyle = NEGRO;
-        ctx.font = `800 56px ${BC}`;
+        ctx.font      = `800 56px ${BC}`;
         ctx.textAlign = "left";
         ctx.fillText(dominio.toUpperCase(), 65, 100);
       }
 
-      // ── LOGO arriba derecha ──
+      // Logo arriba derecha
       if (logoImg) {
         const LR = 75;
         const LX = W - LR - 28, LY = LR + 28;
@@ -222,69 +296,54 @@
         ctx.strokeStyle = AMARILLO; ctx.lineWidth = 4; ctx.stroke();
       }
 
-      // ── MARCA Y MODELO sobre la foto (parte inferior) ──
-      ctx.textAlign = "center";
-      ctx.shadowColor = "rgba(0,0,0,.7)";
-      ctx.shadowBlur = 20;
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      // ZONA INFERIOR (igual en ambos casos)
+      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+      // Fondo blanco desde FOTO_H hacia abajo
       ctx.fillStyle = BLANCO;
-      ctx.font = `900 105px ${BC}`;
-      ctx.fillText((v.marca || "").toUpperCase(), W / 2, FOTO_H - 150);
+      ctx.fillRect(0, FOTO_H, W, H - FOTO_H);
 
-      // Modelo — reduce si es muy largo
-      let mfs = 82;
-      ctx.font = `800 ${mfs}px ${BC}`;
-      const modelo = (v.modelo || "").toUpperCase();
-      while (ctx.measureText(modelo).width > W - 80 && mfs > 48) {
-        mfs -= 3;
-        ctx.font = `800 ${mfs}px ${BC}`;
-      }
-      ctx.fillText(modelo, W / 2, FOTO_H - 70);
-      ctx.shadowBlur = 0;
-
-      // ── BANDA AZUL "AUTOPARTES DISPONIBLES" ──
+      // Banda azul "AUTOPARTES DISPONIBLES"
       roundRect(ctx, 40, FOTO_H + 40, W - 80, 90, 16, AZUL);
       ctx.fillStyle = BLANCO;
-      ctx.font = `900 52px ${BC}`;
+      ctx.font      = `900 52px ${BC}`;
       ctx.textAlign = "center";
-      ctx.fillText("AUTOPARTES DISPONIBLES", W / 2, FOTO_H + 100);
+      ctx.fillText("AUTOPARTES DISPONIBLES", cx, FOTO_H + 100);
 
-      // ── LISTA DE PIEZAS ──
+      // Lista de piezas
       const piezas = ["MOTOR", "CAJA", "CHAPA", "INTERIOR"];
-      ctx.fillStyle = NEGRO;
-      ctx.font = `700 42px ${BC}`;
       ctx.textAlign = "left";
       piezas.forEach((pieza, i) => {
-        // checks en amarillo
+        const py = FOTO_H + 185 + i * 60;
         ctx.fillStyle = AZUL;
-        ctx.fillText("✓", 80, FOTO_H + 190 + i * 62);
+        ctx.font      = `800 42px ${BC}`;
+        ctx.fillText("✓", 80, py);
         ctx.fillStyle = NEGRO;
-        ctx.fillText("  " + pieza, 80 + 50, FOTO_H + 190 + i * 62);
+        ctx.font      = `700 42px ${BC}`;
+        ctx.fillText(pieza, 148, py);
       });
 
-      // ── WHATSAPP ──
+      // WhatsApp
       ctx.fillStyle = AZUL;
-      ctx.font = `900 62px ${BC}`;
+      ctx.font      = `900 60px ${BC}`;
       ctx.textAlign = "center";
-      ctx.fillText("📲 2314 545224", W / 2, FOTO_H + 500);
+      ctx.fillText("📲 2314 545224", cx, FOTO_H + 500);
 
-      // ── FINANCIACIÓN ──
-      ctx.fillStyle = "#101010";
-      ctx.font = `900 42px ${BC}`;
-      // Badge amarillo
-      roundRect(ctx, 100, FOTO_H + 522, W - 200, 66, 12, AMARILLO);
+      // Badge amarillo financiación
+      roundRect(ctx, 100, FOTO_H + 520, W - 200, 66, 12, AMARILLO);
       ctx.fillStyle = NEGRO;
-      ctx.font = `800 40px ${BC}`;
+      ctx.font      = `800 38px ${BC}`;
       ctx.textAlign = "center";
-      ctx.fillText("3 CUOTAS SIN INTERÉS", W / 2, FOTO_H + 566);
+      ctx.fillText("3 CUOTAS SIN INTERÉS", cx, FOTO_H + 564);
 
-      // ── FRANJA CORPORATIVA INFERIOR ──
+      // Franja corporativa inferior
       ctx.fillStyle = AZUL;
       ctx.fillRect(0, H - 90, W, 90);
       ctx.fillStyle = BLANCO;
-      ctx.font = `700 34px ${BC}`;
+      ctx.font      = `700 34px ${BC}`;
       ctx.textAlign = "center";
-      ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", W / 2, H - 32);
+      ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx, H - 32);
     }
 
         async function actualizarPreview() {
