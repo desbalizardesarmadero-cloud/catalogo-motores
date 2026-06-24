@@ -80,488 +80,827 @@
     <canvas id="cv" style="display:none"></canvas>
   </div>
 
-  <script>
-    const SB_URL = "https://okjroggxyvwmlvowdldo.supabase.co";
-    const SB_KEY = "sb_publishable_wMPA_yj45_gmi0duYi6CMw_vl0jNeE8";
-    const { createClient } = supabase;
-    const sb = createClient(SB_URL, SB_KEY);
-    const LOGO_URL = "https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg";
+<script>
+// ─────────────────────────────────────────────
+// CONFIGURACIÓN
+// ─────────────────────────────────────────────
+const SB_URL  = "https://okjroggxyvwmlvowdldo.supabase.co";
+const SB_KEY  = "sb_publishable_wMPA_yj45_gmi0duYi6CMw_vl0jNeE8";
+const LOGO_URL = "https://okjroggxyvwmlvowdldo.supabase.co/storage/v1/object/public/assets/balizar%20fondo.jpg";
 
-    const W = 1080, H = 1350;
-    let V = null, fotos = [null, null];
+const { createClient } = supabase;
+const sb = createClient(SB_URL, SB_KEY);
 
-    async function loadFonts() {
-      const pairs = [
-        ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxwL3I-JCGChYJ8VI-L6OO_au7B43LSmQ.woff2", "900"],
-        ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B4973mhdSqmM.woff2", "700"],
-      ];
-      await Promise.all(pairs.map(([url, w]) => {
-        const f = new FontFace("BC", `url(${url})`, { weight: w });
-        return f.load().then(loaded => document.fonts.add(loaded)).catch(() => {});
-      }));
-      await document.fonts.ready;
-    }
+// ─────────────────────────────────────────────
+// CONSTANTES DE DISEÑO
+// ─────────────────────────────────────────────
+const W = 1080;
+const H = 1350;
+const CX = W / 2;
 
-    async function loadImg(url) {
-      if (!url) return null;
-      return new Promise(res => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => res(img);
-        img.onerror = () => { const i2 = new Image(); i2.onload = () => res(i2); i2.onerror = () => res(null); i2.src = url; };
-        img.src = url;
-      });
-    }
+const COLOR = {
+  azul:        "#0057B8",
+  azulOsc:     "#001A3D",
+  azulMid:     "#002060",
+  amarillo:    "#FFD400",
+  blanco:      "#FFFFFF",
+  negro:       "#111111",
+  wsp:         "#25D366",
+  fondoFoto:   "#111111",
+};
 
-    function cover(ctx, img, x, y, w, h) {
-      if (!img) { ctx.fillStyle = "#111"; ctx.fillRect(x, y, w, h); return; }
-      const s = Math.max(w / img.width, h / img.height);
-      const sw = img.width * s, sh = img.height * s;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
-      ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
-      ctx.restore();
-    }
+const FONT = {
+  bc: "BC,'Arial Black',Arial",
+  dm: "'DM Sans',Arial",
+};
 
-    function gradV(ctx, x, y, w, h, stops) {
-      const g = ctx.createLinearGradient(0, y, 0, y + h);
-      stops.forEach(([p, c]) => g.addColorStop(p, c));
-      ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
-    }
+// Alturas de zonas compartidas
+const ZONE = {
+  header:  130,
+  sep:      18,
+  wsp:     220,
+  footer:   92,
+};
 
-    function rr(ctx, x, y, w, h, r, fill, stroke, sw) {
-      ctx.beginPath();
-      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
-      ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-      ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
-      ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
-      ctx.closePath();
-      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw||2; ctx.stroke(); }
-    }
+// ─────────────────────────────────────────────
+// HELPERS — helpers.js
+// ─────────────────────────────────────────────
 
-    async function render(canvas) {
-      canvas.width = W; canvas.height = H;
-      const ctx = canvas.getContext("2d");
-      const v = V, cx = W / 2;
-      const BC = "BC,'Arial Black',Arial";
-      const DM = "'DM Sans',Arial";
-      const AZUL = "#0057B8", AMARILLO = "#FFD400", BLANCO = "#FFFFFF", NEGRO = "#111111";
-      const AZUL_OSC = "#001A3D";
+function cover(ctx, img, x, y, w, h) {
+  if (!img) { ctx.fillStyle = COLOR.fondoFoto; ctx.fillRect(x, y, w, h); return; }
+  const s  = Math.max(w / img.width, h / img.height);
+  const sw = img.width  * s;
+  const sh = img.height * s;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.clip();
+  ctx.drawImage(img, x + (w - sw) / 2, y + (h - sh) / 2, sw, sh);
+  ctx.restore();
+}
 
-      const [imgA, imgB, logo] = await Promise.all([
-        loadImg(fotos[0]), loadImg(fotos[1]), loadImg(LOGO_URL)
-      ]);
+function gradV(ctx, x, y, w, h, stops) {
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  stops.forEach(([p, c]) => g.addColorStop(p, c));
+  ctx.fillStyle = g;
+  ctx.fillRect(x, y, w, h);
+}
 
-      const dominio = (v.dominio || v.rudac || "").toUpperCase();
-      const marca   = (v.marca  || "").toUpperCase();
-      const modelo  = (v.modelo || "").toUpperCase();
+function rr(ctx, x, y, w, h, r, fill, stroke, sw) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y,     x + w, y + r,     r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x,     y,     x + r,     y,         r);
+  ctx.closePath();
+  if (fill)   { ctx.fillStyle   = fill;   ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw || 2; ctx.stroke(); }
+}
 
-      // ══════════════════════════════════════════════════════
-      // DISEÑO VEHÍCULO — estilo "Desarme Ingresado" Desbalizar
-      // ══════════════════════════════════════════════════════
-      if (v.anio !== undefined) {
+// Ajusta tamaño de fuente hasta que el texto entre en maxWidth.
+// Devuelve el fontSize final.
+function fitFontSize(ctx, text, fontTemplate, startSize, minSize, maxWidth) {
+  let size = startSize;
+  ctx.font = fontTemplate(size);
+  while (ctx.measureText(text).width > maxWidth && size > minSize) {
+    size -= 2;
+    ctx.font = fontTemplate(size);
+  }
+  return size;
+}
 
-        // ── HELPER: dibuja ícono de engranaje en canvas ──
-        function drawGear(ctx, cx, cy, r, color) {
-          const teeth = 8, iR = r*0.55, tW = 0.22;
-          ctx.save();
-          ctx.fillStyle = color;
-          ctx.beginPath();
-          for (let i = 0; i < teeth; i++) {
-            const a0 = (i/teeth)*Math.PI*2 - tW, a1 = a0+tW, a2 = a1+tW, a3 = a2+tW;
-            ctx.arc(cx, cy, iR, a0-0.05, a0+0.05);
-            ctx.lineTo(cx + Math.cos(a0)*r, cy + Math.sin(a0)*r);
-            ctx.arc(cx, cy, r, a0, a2, false);
-            ctx.lineTo(cx + Math.cos(a2)*iR, cy + Math.sin(a2)*iR);
-            ctx.arc(cx, cy, iR, a2-0.05, a2+tW*2, false);
-          }
-          ctx.closePath(); ctx.fill();
-          ctx.fillStyle = "#001A4D";
-          ctx.beginPath(); ctx.arc(cx, cy, r*0.32, 0, Math.PI*2); ctx.fill();
-          ctx.restore();
+// Parte un texto en máximo maxLines líneas intentando equilibrar anchos.
+// Reduce el fontSize hasta que todas las líneas entren en maxWidth.
+function fitMultiline(ctx, text, fontTemplate, startSize, minSize, maxWidth, maxLines) {
+  let size = startSize;
+
+  const tryPart = (sz) => {
+    ctx.font = fontTemplate(sz);
+    // ¿Entra en 1 línea?
+    if (ctx.measureText(text).width <= maxWidth) return [text];
+
+    const words = text.split(" ");
+    // Intenta hasta maxLines - 1 cortes
+    // Usa enfoque greedy para 2 líneas: prueba todos los cortes y elige el más balanceado
+    if (maxLines >= 2) {
+      let best = null, bestDiff = Infinity;
+      for (let i = 1; i < words.length; i++) {
+        const l1 = words.slice(0, i).join(" ");
+        const l2 = words.slice(i).join(" ");
+        const w1 = ctx.measureText(l1).width;
+        const w2 = ctx.measureText(l2).width;
+        if (w1 <= maxWidth && w2 <= maxWidth) {
+          const diff = Math.abs(w1 - w2);
+          if (diff < bestDiff) { bestDiff = diff; best = [l1, l2]; }
         }
-
-        // ── HELPER: dibuja íconos del pie sin emojis ──
-        function drawPieIcon(ctx, x, y, type, color) {
-          ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 4;
-          if (type === "shield") {
-            ctx.beginPath(); ctx.moveTo(x, y-18); ctx.lineTo(x+14, y-10);
-            ctx.lineTo(x+14, y+4); ctx.quadraticCurveTo(x+14,y+18,x,y+22);
-            ctx.quadraticCurveTo(x-14,y+18,x-14,y+4); ctx.lineTo(x-14,y-10); ctx.closePath(); ctx.fill();
-          } else if (type === "box") {
-            ctx.strokeRect(x-14, y-14, 28, 28); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(x-14,y-2); ctx.lineTo(x+14,y-2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(x,y-14); ctx.lineTo(x,y-2); ctx.stroke();
-          } else if (type === "check") {
-            ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI*2); ctx.stroke();
-            ctx.lineWidth = 5;
-            ctx.beginPath(); ctx.moveTo(x-8,y+1); ctx.lineTo(x-2,y+7); ctx.lineTo(x+9,y-7); ctx.stroke();
-          } else if (type === "chat") {
-            ctx.beginPath(); ctx.arc(x, y-2, 15, Math.PI*0.2, Math.PI*1.8); ctx.lineTo(x-6,y+14); ctx.closePath(); ctx.fill();
-            ctx.fillStyle = "#001A4D";
-            for (let d=-7;d<=7;d+=7) { ctx.beginPath(); ctx.arc(x+d,y-2,2.5,0,Math.PI*2); ctx.fill(); }
-          }
-          ctx.restore();
-        }
-
-        // ── MEDIDAS FIJAS ──
-        const HDR_H   = 130;
-        const FOTO1_H = 470;
-        const SEP_H   = 18;
-        const FOTO2_H = 420;
-        const WSP_H   = 220;
-        const PIE_H   = 92;
-        // sanity: total = 130+470+18+420+220+92 = 1350 ✓
-
-        // ── FONDO ──
-        ctx.fillStyle = "#001235";
-        ctx.fillRect(0, 0, W, H);
-
-        // ══ HEADER ══
-        ctx.fillStyle = "#002060";
-        ctx.fillRect(0, 0, W, HDR_H);
-
-        // Globo ícono — izquierda
-        const gX = 52, gY = HDR_H/2;
-        ctx.strokeStyle = BLANCO; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.arc(gX, gY, 24, 0, Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(gX, gY, 11, 24, 0, 0, Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(gX-24, gY); ctx.lineTo(gX+24, gY); ctx.stroke();
-        ctx.fillStyle = BLANCO;
-        ctx.font = `500 32px ${DM}`;
-        ctx.textAlign = "left";
-        ctx.fillText("desbalizar.com.ar", gX + 34, gY + 12);
-
-        // Logo — derecha, dibujado directo sin clip (evita bug negro)
-        if (logo) {
-          const LH = 80, LW = logo.width * (LH / logo.height);
-          const LX = W - LW - 30, LY = (HDR_H - LH)/2;
-          ctx.drawImage(logo, LX, LY, LW, LH);
-        } else {
-          ctx.fillStyle = BLANCO; ctx.font = `900 56px ${BC}`; ctx.textAlign = "right";
-          ctx.fillText("Desbalizar", W-30, HDR_H/2+20);
-          ctx.fillStyle = AMARILLO; ctx.font = `500 26px ${DM}`;
-          ctx.fillText("Desarmadero · Autopartes", W-30, HDR_H/2+50);
-        }
-
-        // ══ FOTO SUPERIOR ══
-        const F1Y = HDR_H;
-        cover(ctx, imgA, 0, F1Y, W, FOTO1_H);
-
-        // Degradado oscuro a la derecha para que el badge sea legible
-        const vgR = ctx.createLinearGradient(W*0.45, 0, W, 0);
-        vgR.addColorStop(0, "rgba(0,8,32,0)");
-        vgR.addColorStop(1, "rgba(0,8,32,0.72)");
-        ctx.fillStyle = vgR;
-        ctx.fillRect(0, F1Y, W, FOTO1_H);
-
-        // ── BADGE MARCA/MODELO/DESARME — altura FIJA, texto se adapta ──
-        const BDG_W = 390, BDG_H = 360, BDG_R = 18;
-        const BDG_X = W - BDG_W - 24;
-        const BDG_Y = F1Y + 40;  // pegado arriba con margen
-
-        rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, "#001A4D");
-        rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, null, AMARILLO, 3.5);
-
-        const bcx = BDG_X + BDG_W/2;
-        const PAD = 22;
-
-        // ── MARCA (zona fija: 80px de alto) ──
-        let mfs = 72;
-        ctx.font = `900 ${mfs}px ${BC}`;
-        while (ctx.measureText(marca).width > BDG_W - 28 && mfs > 36) { mfs -= 3; ctx.font = `900 ${mfs}px ${BC}`; }
-        ctx.fillStyle = BLANCO; ctx.textAlign = "center";
-        ctx.fillText(marca, bcx, BDG_Y + PAD + mfs * 0.82);
-        const MARCA_BOTTOM = BDG_Y + PAD + 80;
-
-        // ── SEPARADOR ──
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(BDG_X + 20, MARCA_BOTTOM, BDG_W - 40, 4);
-
-        // ── MODELO — zona disponible fija: de MARCA_BOTTOM+4 hasta DESARME_TOP ──
-        const DESARME_H = 96;  // altura reservada abajo para "DESARME INGRESADO"
-        const MODELO_TOP = MARCA_BOTTOM + 4 + 10;
-        const MODELO_BOT = BDG_Y + BDG_H - PAD - DESARME_H;
-        const MODELO_ZONE = MODELO_BOT - MODELO_TOP;  // px disponibles para el modelo
-
-        // Partir modelo en máximo 2 líneas, reducir fuente hasta que entren
-        function splitModel(text, maxW, ctx, font) {
-          // intenta 1 línea
-          ctx.font = font;
-          if (ctx.measureText(text).width <= maxW) return [text];
-          // parte en 2: busca el mejor corte por palabras
-          const words = text.split(" ");
-          let best = null, bestDiff = Infinity;
-          for (let i = 1; i < words.length; i++) {
-            const l1 = words.slice(0, i).join(" ");
-            const l2 = words.slice(i).join(" ");
-            const diff = Math.abs(ctx.measureText(l1).width - ctx.measureText(l2).width);
-            if (diff < bestDiff) { bestDiff = diff; best = [l1, l2]; }
-          }
-          return best || [text];
-        }
-
-        let mfs2 = 100;
-        let modelLines2 = [];
-        const maxMW = BDG_W - 28;
-        // Reducir hasta que 2 líneas entren en la zona disponible Y en el ancho
-        while (mfs2 >= 38) {
-          ctx.font = `900 ${mfs2}px ${BC}`;
-          const lines = splitModel(modelo, maxMW, ctx, `900 ${mfs2}px ${BC}`);
-          const neededH = lines.length * (mfs2 * 1.1);
-          let maxLineW = 0;
-          lines.forEach(l => { ctx.font=`900 ${mfs2}px ${BC}`; maxLineW = Math.max(maxLineW, ctx.measureText(l).width); });
-          if (neededH <= MODELO_ZONE && maxLineW <= maxMW) { modelLines2 = lines; break; }
-          mfs2 -= 4;
-        }
-        if (!modelLines2.length) modelLines2 = [modelo];
-
-        const lineH2 = mfs2 * 1.1;
-        const totalModelH = modelLines2.length * lineH2;
-        let modelStartY = MODELO_TOP + (MODELO_ZONE - totalModelH) / 2 + mfs2 * 0.82;
-        ctx.fillStyle = AMARILLO;
-        ctx.font = `900 ${mfs2}px ${BC}`;
-        ctx.textAlign = "center";
-        modelLines2.forEach(l => { ctx.fillText(l, bcx, modelStartY); modelStartY += lineH2; });
-
-        // ── DESARME INGRESADO ──
-        const DZ_Y = BDG_Y + BDG_H - PAD - DESARME_H;
-        ctx.fillStyle = "rgba(255,255,255,0.08)";
-        ctx.fillRect(BDG_X + 12, DZ_Y, BDG_W - 24, DESARME_H);
-        const gearCX = BDG_X + 44, gearCY = DZ_Y + DESARME_H/2;
-        drawGear(ctx, gearCX, gearCY, 22, AMARILLO);
-        ctx.fillStyle = BLANCO;
-        ctx.font = `800 40px ${BC}`;
-        ctx.textAlign = "left";
-        ctx.fillText("DESARME", gearCX + 32, DZ_Y + 38);
-        ctx.fillText("INGRESADO", gearCX + 32, DZ_Y + 80);
-
-        // ══ SEPARADOR DOBLE LÍNEA AMARILLA ══
-        const SEP_Y = F1Y + FOTO1_H;
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(0, SEP_Y, W, SEP_H);
-        ctx.fillStyle = "#001235";
-        ctx.fillRect(0, SEP_Y + 4, W, 4);
-
-        // ══ FOTO INFERIOR ══
-        const F2Y = SEP_Y + SEP_H;
-        cover(ctx, imgB || imgA, 0, F2Y, W, FOTO2_H);
-
-        // ══ ZONA WHATSAPP (blanca) ══
-        const WSP_Y = F2Y + FOTO2_H;
-        ctx.fillStyle = BLANCO;
-        ctx.fillRect(0, WSP_Y, W, WSP_H);
-
-        // Texto "PEDÍ LA PIEZA QUE NECESITÁS"
-        ctx.font = `800 58px ${BC}`;
-        const txtBefore = "PEDÍ LA ";
-        const txtPieza  = "PIEZA";
-        const txtAfter  = " QUE NECESITÁS";
-        const wBefore = ctx.measureText(txtBefore).width;
-        const wPieza  = ctx.measureText(txtPieza).width;
-        const wAfter  = ctx.measureText(txtAfter).width;
-        const wTotal  = wBefore + wPieza + wAfter;
-        let tx0 = cx - wTotal/2;
-        const textY = WSP_Y + 76;
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#111"; ctx.fillText(txtBefore, tx0, textY);
-        ctx.fillStyle = AZUL;   ctx.fillText(txtPieza,  tx0+wBefore, textY);
-        ctx.fillStyle = "#111"; ctx.fillText(txtAfter,  tx0+wBefore+wPieza, textY);
-
-        // Fila WhatsApp: ícono + número
-        const ROW_Y = WSP_Y + 150;
-        // Círculo verde
-        const wpX = 100, wpY = ROW_Y;
-        ctx.beginPath(); ctx.arc(wpX, wpY, 58, 0, Math.PI*2);
-        ctx.fillStyle = "#25D366"; ctx.fill();
-        // Burbuja WhatsApp: cuerpo redondo + colita
-        ctx.fillStyle = BLANCO;
-        ctx.beginPath(); ctx.arc(wpX, wpY-4, 32, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = "#25D366";
-        ctx.font = `900 52px ${BC}`; ctx.textAlign = "center";
-        ctx.fillText("W", wpX, wpY+14);
-        ctx.fillStyle = BLANCO;
-        ctx.font = `900 52px ${BC}`;
-        ctx.fillText("W", wpX, wpY+13);
-
-        // Número
-        ctx.fillStyle = "#002060";
-        ctx.font = `900 128px ${BC}`;
-        ctx.textAlign = "left";
-        ctx.fillText("2314 545224", wpX + 76, ROW_Y + 48);
-
-        // Flecha amarilla ↘
-        ctx.fillStyle = AMARILLO;
-        ctx.font = `bold 70px ${DM}`;
-        ctx.textAlign = "right";
-        ctx.fillText("↘", W - 24, ROW_Y + 55);
-
-        // ══ PIE — 4 beneficios sin emojis ══
-        const PIE_Y = WSP_Y + WSP_H;
-        ctx.fillStyle = "#002060";
-        ctx.fillRect(0, PIE_Y, W, PIE_H);
-
-        const beneficios = [
-          { type:"shield", label:"COMPRA SEGURA",       sub:"Protegemos tu compra" },
-          { type:"box",    label:"ENVÍOS A TODO EL PAÍS", sub:"Rapidez y confianza" },
-          { type:"check",  label:"GARANTÍA DE ORIGEN",  sub:"Piezas verificadas" },
-          { type:"chat",   label:"ATENCIÓN PERSONALIZADA", sub:"Te asesoramos siempre" },
-        ];
-        const colW = W / 4;
-        beneficios.forEach((b, i) => {
-          const bx = colW * i + colW/2;
-          if (i > 0) {
-            ctx.fillStyle = "rgba(255,255,255,0.18)";
-            ctx.fillRect(colW*i, PIE_Y+12, 1, PIE_H-24);
-          }
-          drawPieIcon(ctx, bx, PIE_Y + 28, b.type, AMARILLO);
-          ctx.textAlign = "center";
-          ctx.fillStyle = BLANCO;
-          // Partir label si es muy largo
-          ctx.font = `700 22px ${BC}`;
-          const words = b.label.split(" ");
-          let lines = [], cur = "";
-          words.forEach(w => {
-            const test = cur ? cur+" "+w : w;
-            if (ctx.measureText(test).width > colW-18 && cur) { lines.push(cur); cur=w; } else cur=test;
-          });
-          if (cur) lines.push(cur);
-          const lineStart = PIE_Y + 56;
-          lines.forEach((l,li) => ctx.fillText(l, bx, lineStart + li*24));
-          ctx.fillStyle = "rgba(255,255,255,0.5)";
-          ctx.font = `400 17px ${DM}`;
-          ctx.fillText(b.sub, bx, lineStart + lines.length*24 + 4);
-        });
-
-      } else {
-        // ══════════════════════════════════════════════════════
-        // DISEÑO MOTOR — una foto, zona blanca con info abajo
-        // ══════════════════════════════════════════════════════
-        const FOTO_H = 850;
-        ctx.fillStyle = BLANCO;
-        ctx.fillRect(0, 0, W, H);
-        cover(ctx, imgA, 0, 0, W, FOTO_H);
-        gradV(ctx, 0, FOTO_H-340, W, 340, [[0,"rgba(0,0,0,0)"],[1,"rgba(0,0,0,0.78)"]]);
-
-        ctx.textAlign = "center";
-        ctx.shadowColor = "rgba(0,0,0,.7)"; ctx.shadowBlur = 20;
-        ctx.fillStyle = AMARILLO;
-        ctx.font = `900 105px ${BC}`;
-        ctx.fillText(marca, cx, FOTO_H-165);
-
-        let mfs = 82;
-        ctx.font = `800 ${mfs}px ${BC}`;
-        while (ctx.measureText(modelo).width > W-80 && mfs>46) { mfs-=3; ctx.font=`800 ${mfs}px ${BC}`; }
-        ctx.fillStyle = BLANCO;
-        ctx.fillText(modelo, cx, FOTO_H-72);
-        ctx.shadowBlur = 0;
-
-        if (dominio) {
-          rr(ctx, 40, 40, 260, 90, 12, BLANCO, "#D9D9D9", 1);
-          ctx.fillStyle = NEGRO; ctx.font=`800 56px ${BC}`; ctx.textAlign="left";
-          ctx.fillText(dominio, 65, 100);
-        }
-        if (logo) {
-          const LR=75, LX=W-LR-28, LY=LR+28;
-          ctx.save(); ctx.beginPath(); ctx.arc(LX,LY,LR,0,Math.PI*2); ctx.clip();
-          ctx.drawImage(logo,LX-LR,LY-LR,LR*2,LR*2); ctx.restore();
-          ctx.beginPath(); ctx.arc(LX,LY,LR+4,0,Math.PI*2);
-          ctx.strokeStyle=AMARILLO; ctx.lineWidth=4; ctx.stroke();
-        }
-
-        ctx.fillStyle = BLANCO;
-        ctx.fillRect(0, FOTO_H, W, H-FOTO_H);
-        rr(ctx, 40, FOTO_H+40, W-80, 90, 16, AZUL);
-        ctx.fillStyle=BLANCO; ctx.font=`900 52px ${BC}`; ctx.textAlign="center";
-        ctx.fillText("AUTOPARTES DISPONIBLES", cx, FOTO_H+100);
-
-        const piezas = ["MOTOR","CAJA","CHAPA","INTERIOR"];
-        ctx.textAlign="left";
-        piezas.forEach((p,i) => {
-          const py = FOTO_H+185+i*60;
-          ctx.fillStyle=AZUL; ctx.font=`800 42px ${BC}`; ctx.fillText("✓", 80, py);
-          ctx.fillStyle=NEGRO; ctx.font=`700 42px ${BC}`; ctx.fillText(p, 148, py);
-        });
-
-        ctx.fillStyle=AZUL; ctx.font=`900 60px ${BC}`; ctx.textAlign="center";
-        ctx.fillText("2314 545224", cx, FOTO_H+500);
-        rr(ctx, 100, FOTO_H+520, W-200, 66, 12, AMARILLO);
-        ctx.fillStyle=NEGRO; ctx.font=`800 38px ${BC}`; ctx.textAlign="center";
-        ctx.fillText("3 CUOTAS SIN INTERÉS", cx, FOTO_H+564);
-
-        ctx.fillStyle=AZUL; ctx.fillRect(0, H-90, W, 90);
-        ctx.fillStyle=BLANCO; ctx.font=`700 34px ${BC}`; ctx.textAlign="center";
-        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx, H-32);
       }
+      if (best) return best;
+    }
+    return null; // no entró
+  };
+
+  while (size >= minSize) {
+    const lines = tryPart(size);
+    if (lines) return { lines, size };
+    size -= 2;
+  }
+
+  // Fallback: devuelve texto completo con tamaño mínimo
+  ctx.font = fontTemplate(minSize);
+  return { lines: [text], size: minSize };
+}
+
+// ─────────────────────────────────────────────
+// ICONS — icons.js
+// ─────────────────────────────────────────────
+
+function drawGear(ctx, cx, cy, r, color) {
+  const TEETH = 8;
+  const INNER = r * 0.52;
+  const HOLE  = r * 0.28;
+  const ARC   = (Math.PI * 2) / TEETH;
+  const HALF  = ARC * 0.35;
+
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (let i = 0; i < TEETH; i++) {
+    const a = i * ARC;
+    ctx.arc(cx, cy, INNER, a - HALF, a + HALF);
+    ctx.lineTo(cx + Math.cos(a + HALF) * r, cy + Math.sin(a + HALF) * r);
+    ctx.arc(cx, cy, r, a + HALF, a + ARC - HALF);
+    ctx.lineTo(
+      cx + Math.cos(a + ARC - HALF) * INNER,
+      cy + Math.sin(a + ARC - HALF) * INNER
+    );
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Agujero central
+  ctx.fillStyle = COLOR.azulOsc;
+  ctx.beginPath();
+  ctx.arc(cx, cy, HOLE, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawIconShield(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r);
+  ctx.lineTo(cx + r * 0.8, cy - r * 0.5);
+  ctx.lineTo(cx + r * 0.8, cy + r * 0.1);
+  ctx.quadraticCurveTo(cx + r * 0.8, cy + r, cx, cy + r * 1.1);
+  ctx.quadraticCurveTo(cx - r * 0.8, cy + r, cx - r * 0.8, cy + r * 0.1);
+  ctx.lineTo(cx - r * 0.8, cy - r * 0.5);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawIconBox(ctx, cx, cy, r, color) {
+  const s = r * 1.6;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = r * 0.22;
+  ctx.strokeRect(cx - s / 2, cy - s / 2, s, s);
+  // tapa
+  ctx.beginPath();
+  ctx.moveTo(cx - s / 2, cy - s / 2 + r * 0.5);
+  ctx.lineTo(cx + s / 2, cy - s / 2 + r * 0.5);
+  ctx.stroke();
+  // faja vertical central de la tapa
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - s / 2);
+  ctx.lineTo(cx, cy - s / 2 + r * 0.5);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawIconCheck(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = r * 0.22;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = r * 0.28;
+  ctx.lineCap   = "round";
+  ctx.lineJoin  = "round";
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.45, cy + r * 0.05);
+  ctx.lineTo(cx - r * 0.1,  cy + r * 0.42);
+  ctx.lineTo(cx + r * 0.5,  cy - r * 0.38);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawIconChat(ctx, cx, cy, r, color) {
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r * 0.1, r * 0.95, r * 0.75, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // colita
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.2, cy + r * 0.65);
+  ctx.lineTo(cx - r * 0.6, cy + r * 1.1);
+  ctx.lineTo(cx + r * 0.2, cy + r * 0.65);
+  ctx.closePath();
+  ctx.fill();
+  // puntos
+  ctx.fillStyle = COLOR.azulMid;
+  [-r * 0.35, 0, r * 0.35].forEach(dx => {
+    ctx.beginPath();
+    ctx.arc(cx + dx, cy - r * 0.1, r * 0.14, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawIconWhatsapp(ctx, cx, cy, r) {
+  // Círculo verde de fondo
+  ctx.save();
+  ctx.fillStyle = COLOR.wsp;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Burbuja blanca interior
+  const br = r * 0.62;
+  ctx.fillStyle = COLOR.blanco;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - r * 0.05, br, br * 0.9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Colita de la burbuja
+  ctx.beginPath();
+  ctx.moveTo(cx - br * 0.25, cy + br * 0.55);
+  ctx.lineTo(cx - br * 0.7,  cy + br * 1.05);
+  ctx.lineTo(cx + br * 0.1,  cy + br * 0.55);
+  ctx.closePath();
+  ctx.fill();
+
+  // Teléfono (forma simplificada en blanco invertido → color wsp)
+  ctx.fillStyle = COLOR.wsp;
+  const pr = br * 0.52;
+  // dibuja un auricular simplificado como dos arcos
+  ctx.lineWidth = br * 0.22;
+  ctx.strokeStyle = COLOR.wsp;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.05, pr, Math.PI * 0.75, Math.PI * 1.85);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy - r * 0.05, pr * 0.45, Math.PI * 0.75, Math.PI * 1.85);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// ─────────────────────────────────────────────
+// COMPONENTES — components.js
+// ─────────────────────────────────────────────
+
+// HEADER
+// Ocupa HDR_H px desde y=0.
+// Devuelve el y donde termina (= ZONE.header).
+function drawHeader(ctx, logo) {
+  const H_H = ZONE.header;
+
+  // Fondo
+  ctx.fillStyle = COLOR.azulMid;
+  ctx.fillRect(0, 0, W, H_H);
+
+  // Cápsula dominio web — izquierda
+  const CAP_H = 52, CAP_R = CAP_H / 2;
+  const CAP_X = 30, CAP_Y = (H_H - CAP_H) / 2;
+  const CAP_TEXT = "desbalizar.com.ar";
+  rr(ctx, CAP_X, CAP_Y, 380, CAP_H, CAP_R, "rgba(255,255,255,0.12)");
+
+  // Ícono globo dentro de la cápsula
+  const GX = CAP_X + CAP_R + 4;
+  const GY = CAP_Y + CAP_H / 2;
+  const GR = 14;
+  ctx.strokeStyle = COLOR.blanco;
+  ctx.lineWidth   = 2.5;
+  ctx.beginPath(); ctx.arc(GX, GY, GR, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(GX, GY, GR * 0.48, GR, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(GX - GR, GY); ctx.lineTo(GX + GR, GY); ctx.stroke();
+
+  ctx.fillStyle  = COLOR.blanco;
+  ctx.font       = `500 28px ${FONT.dm}`;
+  ctx.textAlign  = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(CAP_TEXT, GX + GR + 10, GY);
+  ctx.textBaseline = "alphabetic";
+
+  // Logo — derecha
+  if (logo) {
+    const LH = 80;
+    const LW = logo.width * (LH / logo.height);
+    const LX = W - LW - 30;
+    const LY = (H_H - LH) / 2;
+    ctx.drawImage(logo, LX, LY, LW, LH);
+  } else {
+    ctx.fillStyle = COLOR.blanco;
+    ctx.font      = `900 52px ${FONT.bc}`;
+    ctx.textAlign = "right";
+    ctx.fillText("Desbalizar", W - 30, H_H / 2 + 8);
+    ctx.fillStyle = COLOR.amarillo;
+    ctx.font      = `500 24px ${FONT.dm}`;
+    ctx.fillText("Desarmadero · Autopartes", W - 30, H_H / 2 + 34);
+  }
+
+  return H_H;
+}
+
+// FOOTER (4 columnas de beneficios)
+// Se dibuja desde y = startY, ocupa ZONE.footer px.
+function drawFooter(ctx, startY) {
+  const PIE_H  = ZONE.footer;
+  const COL_W  = W / 4;
+  const ICON_R = 16;
+
+  ctx.fillStyle = COLOR.azulMid;
+  ctx.fillRect(0, startY, W, PIE_H);
+
+  const items = [
+    { draw: drawIconShield, label: "COMPRA SEGURA",          sub: "Protegemos tu compra"  },
+    { draw: drawIconBox,    label: "ENVÍOS A TODO EL PAÍS",  sub: "Rapidez y confianza"   },
+    { draw: drawIconCheck,  label: "GARANTÍA DE ORIGEN",     sub: "Piezas verificadas"    },
+    { draw: drawIconChat,   label: "ATENCIÓN PERSONALIZADA", sub: "Te asesoramos siempre" },
+  ];
+
+  items.forEach((item, i) => {
+    const bx = COL_W * i + COL_W / 2;
+
+    // Separador vertical
+    if (i > 0) {
+      ctx.fillStyle = "rgba(255,255,255,0.15)";
+      ctx.fillRect(COL_W * i, startY + 10, 1, PIE_H - 20);
     }
 
-    async function actualizarPreview() {
-      const cv = document.getElementById("cv");
-      const ld = document.getElementById("loading");
-      ld.style.display = "block"; cv.style.display = "none";
-      await render(cv);
-      ld.style.display = "none"; cv.style.display = "block";
-    }
+    item.draw(ctx, bx, startY + 26, ICON_R, COLOR.amarillo);
 
-    function swap() {
-      [fotos[0], fotos[1]] = [fotos[1], fotos[0]];
-      actualizarSlots();
-      actualizarPreview();
-    }
+    // Label (puede necesitar 2 líneas)
+    ctx.textAlign = "center";
+    ctx.fillStyle = COLOR.blanco;
+    ctx.font      = `700 21px ${FONT.bc}`;
 
-    function actualizarSlots() {
-      [["a",0],["b",1]].forEach(([s,i]) => {
-        const slot  = document.getElementById("slot-"+s);
-        const empty = document.getElementById("slot-"+s+"-empty");
-        const url   = fotos[i];
-        const old   = slot.querySelector("img");
-        if (url) {
-          empty.style.display = "none";
-          if (old) { old.src = url; } else {
-            const img = document.createElement("img");
-            img.src = url;
-            slot.insertBefore(img, slot.querySelector(".foto-slot-label"));
-          }
-        } else {
-          empty.style.display = "flex";
-          if (old) old.remove();
-        }
-      });
-    }
+    const words = item.label.split(" ");
+    let lines = [], cur = "";
+    words.forEach(w => {
+      const test = cur ? cur + " " + w : w;
+      if (ctx.measureText(test).width > COL_W - 16 && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    });
+    if (cur) lines.push(cur);
 
-    async function descargar() {
-      const btn = document.getElementById("btn-dl");
-      btn.disabled = true; btn.textContent = "Generando…";
-      const cv = document.createElement("canvas");
-      await render(cv);
-      const nombre = "post_"+(V.marca||"").toLowerCase()+"_"+(V.modelo||"").toLowerCase().replace(/\s+/g,"_")+".jpg";
-      cv.toBlob(blob => {
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = nombre; a.click();
-        URL.revokeObjectURL(a.href);
-        btn.disabled = false;
-        btn.textContent = "⬇ Descargar Publicación 1080×1350";
-      }, "image/jpeg", 0.95);
-    }
+    const labelY = startY + 52;
+    lines.forEach((l, li) => ctx.fillText(l, bx, labelY + li * 22));
 
-    async function init() {
-      await loadFonts();
-      const id = new URLSearchParams(location.search).get("id");
-      if (!id) return;
-      const { data } = await sb.from("vehiculos").select("*").eq("id", id).single();
-      if (!data) return;
-      V = data;
-      fotos = Array.isArray(data.fotos) ? [data.fotos[0]||null, data.fotos[1]||null] : [null,null];
-      document.getElementById("ctrl-nombre").textContent = (data.marca||"")+" "+(data.modelo||"");
-      const d = [data.anio, data.km ? Number(data.km).toLocaleString("es-AR")+" km" : null].filter(Boolean).join(" · ");
-      document.getElementById("ctrl-datos").textContent = d;
-      actualizarSlots();
-      await actualizarPreview();
-    }
+    ctx.fillStyle = "rgba(255,255,255,0.48)";
+    ctx.font      = `400 16px ${FONT.dm}`;
+    ctx.fillText(item.sub, bx, labelY + lines.length * 22 + 4);
+  });
+}
 
-    init();
-  </script>
+// WHATSAPP CTA
+// Se dibuja desde y = startY, ocupa ZONE.wsp px.
+function drawWhatsappCTA(ctx, startY) {
+  const Z = ZONE.wsp;
+  const TELEFONO = "2314 545224";
+
+  // Fondo blanco
+  ctx.fillStyle = COLOR.blanco;
+  ctx.fillRect(0, startY, W, Z);
+
+  // ── Línea 1: "PEDÍ LA PIEZA QUE NECESITÁS" ──
+  const FS_TITULO = 58;
+  ctx.font = `800 ${FS_TITULO}px ${FONT.bc}`;
+
+  const parts = [
+    { text: "PEDÍ LA ",      color: COLOR.negro },
+    { text: "PIEZA",         color: COLOR.azul  },
+    { text: " QUE NECESITÁS", color: COLOR.negro },
+  ];
+
+  const totalW = parts.reduce((acc, p) => {
+    ctx.font = `800 ${FS_TITULO}px ${FONT.bc}`;
+    return acc + ctx.measureText(p.text).width;
+  }, 0);
+
+  let tx = CX - totalW / 2;
+  const TY = startY + 72;
+  ctx.textAlign = "left";
+  parts.forEach(p => {
+    ctx.font      = `800 ${FS_TITULO}px ${FONT.bc}`;
+    ctx.fillStyle = p.color;
+    ctx.fillText(p.text, tx, TY);
+    tx += ctx.measureText(p.text).width;
+  });
+
+  // ── Línea 2: ícono WhatsApp + número ──
+  const ROW_Y   = startY + 155;
+  const ICON_R  = 56;
+  const ICON_CX = 90;
+
+  drawIconWhatsapp(ctx, ICON_CX, ROW_Y, ICON_R);
+
+  ctx.fillStyle    = COLOR.azulMid;
+  ctx.font         = `900 124px ${FONT.bc}`;
+  ctx.textAlign    = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(TELEFONO, ICON_CX + ICON_R + 24, ROW_Y);
+  ctx.textBaseline = "alphabetic";
+
+  // Flecha decorativa
+  ctx.fillStyle = COLOR.amarillo;
+  ctx.font      = `bold 64px ${FONT.dm}`;
+  ctx.textAlign = "right";
+  ctx.fillText("↘", W - 20, startY + Z - 20);
+}
+
+// BADGE (marca + separador + modelo + desarme ingresado)
+// Se dibuja en posición absoluta (x, y).
+// Ancho y alto son fijos; el texto del modelo se adapta.
+function drawBadge(ctx, x, y, marca, modelo) {
+  const BW = 390;
+  const BH = 360;
+  const BR = 18;
+  const PAD_H = 24;
+  const PAD_V = 20;
+
+  // Fondo + borde
+  rr(ctx, x, y, BW, BH, BR, COLOR.azulOsc);
+  rr(ctx, x, y, BW, BH, BR, null, COLOR.amarillo, 3.5);
+
+  const bcx = x + BW / 2;
+  let curY = y + PAD_V;
+
+  // ── MARCA ──
+  const MARCA_FS_MAX = 72;
+  const MARCA_FS_MIN = 36;
+  const MARCA_ZONE_H = 76;
+
+  const marcaFS = fitFontSize(
+    ctx, marca,
+    sz => `900 ${sz}px ${FONT.bc}`,
+    MARCA_FS_MAX, MARCA_FS_MIN,
+    BW - PAD_H * 2
+  );
+  ctx.font      = `900 ${marcaFS}px ${FONT.bc}`;
+  ctx.fillStyle = COLOR.blanco;
+  ctx.textAlign = "center";
+  ctx.fillText(marca, bcx, curY + MARCA_ZONE_H * 0.78);
+  curY += MARCA_ZONE_H;
+
+  // ── SEPARADOR ──
+  ctx.fillStyle = COLOR.amarillo;
+  ctx.fillRect(x + 20, curY, BW - 40, 4);
+  curY += 4 + 12;
+
+  // ── MODELO — zona reservada fija ──
+  const DESARME_ZONE_H = 100;
+  const MODELO_ZONE_H  = BH - PAD_V - MARCA_ZONE_H - 4 - 12 - DESARME_ZONE_H - PAD_V;
+
+  const { lines: modelLines, size: modelFS } = fitMultiline(
+    ctx, modelo,
+    sz => `900 ${sz}px ${FONT.bc}`,
+    96, 36,
+    BW - PAD_H * 2,
+    2
+  );
+
+  const lineH      = modelFS * 1.12;
+  const totalModelH = lineH * modelLines.length;
+  let modelY       = curY + (MODELO_ZONE_H - totalModelH) / 2 + modelFS * 0.82;
+
+  ctx.font      = `900 ${modelFS}px ${FONT.bc}`;
+  ctx.fillStyle = COLOR.amarillo;
+  ctx.textAlign = "center";
+  modelLines.forEach(l => {
+    ctx.fillText(l, bcx, modelY);
+    modelY += lineH;
+  });
+  curY += MODELO_ZONE_H;
+
+  // ── DESARME INGRESADO ──
+  const DZ_Y = y + BH - PAD_V - DESARME_ZONE_H;
+
+  // Fondo sutil
+  ctx.fillStyle = "rgba(255,255,255,0.07)";
+  ctx.fillRect(x + 10, DZ_Y, BW - 20, DESARME_ZONE_H);
+
+  const GEAR_R  = 22;
+  const GEAR_CX = x + 44;
+  const GEAR_CY = DZ_Y + DESARME_ZONE_H / 2;
+  drawGear(ctx, GEAR_CX, GEAR_CY, GEAR_R, COLOR.amarillo);
+
+  const TXT_X = GEAR_CX + GEAR_R + 18;
+  ctx.fillStyle = COLOR.blanco;
+  ctx.font      = `800 40px ${FONT.bc}`;
+  ctx.textAlign = "left";
+  ctx.fillText("DESARME",   TXT_X, DZ_Y + DESARME_ZONE_H * 0.42);
+  ctx.fillText("INGRESADO", TXT_X, DZ_Y + DESARME_ZONE_H * 0.82);
+}
+
+// SEPARADOR entre foto superior e inferior
+function drawSeparator(ctx, y) {
+  ctx.fillStyle = COLOR.amarillo;
+  ctx.fillRect(0, y, W, ZONE.sep);
+  // línea oscura interior
+  ctx.fillStyle = COLOR.azulMid;
+  ctx.fillRect(0, y + 4, W, 5);
+}
+
+// ─────────────────────────────────────────────
+// LAYOUT: UNA FOTO — layout-single.js
+// ─────────────────────────────────────────────
+// Orden: HEADER · FOTO · CARD INFO · WHATSAPP · FOOTER
+
+function renderSinglePhoto(ctx, { imgA, logo, marca, modelo }) {
+  const FOTO_H  = H - ZONE.header - ZONE.wsp - ZONE.footer;
+  const FOTO_Y  = ZONE.header;
+  const CARD_H  = 360;
+  const FOTO_VIS = FOTO_H - CARD_H; // parte visible de la foto encima de la card
+
+  // Fondo
+  ctx.fillStyle = COLOR.blanco;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header
+  drawHeader(ctx, logo);
+
+  // Foto
+  cover(ctx, imgA, 0, FOTO_Y, W, FOTO_H);
+
+  // Degradado sobre foto para que el texto sea legible
+  gradV(ctx, 0, FOTO_Y + FOTO_VIS - 300, W, 300, [
+    [0, "rgba(0,0,0,0)"],
+    [1, "rgba(0,0,0,0.82)"],
+  ]);
+
+  // Marca en amarillo grande
+  ctx.textAlign   = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.9)";
+  ctx.shadowBlur  = 30;
+  const marcaFS   = fitFontSize(
+    ctx, marca,
+    sz => `900 ${sz}px ${FONT.bc}`,
+    120, 60, W - 80
+  );
+  ctx.font      = `900 ${marcaFS}px ${FONT.bc}`;
+  ctx.fillStyle = COLOR.amarillo;
+  ctx.fillText(marca, CX, FOTO_Y + FOTO_VIS - 120);
+
+  // Modelo en blanco
+  const { lines: mLines, size: mFS } = fitMultiline(
+    ctx, modelo,
+    sz => `700 ${sz}px ${FONT.bc}`,
+    80, 40, W - 80, 2
+  );
+  ctx.font      = `700 ${mFS}px ${FONT.bc}`;
+  ctx.fillStyle = COLOR.blanco;
+  const mLineH  = mFS * 1.1;
+  let mY        = FOTO_Y + FOTO_VIS - 50 - (mLines.length - 1) * mLineH;
+  mLines.forEach(l => { ctx.fillText(l, CX, mY); mY += mLineH; });
+  ctx.shadowBlur = 0;
+
+  // Card info (fondo blanco sobre la parte inferior de la foto)
+  const CARD_Y = FOTO_Y + FOTO_VIS;
+  ctx.fillStyle = COLOR.blanco;
+  ctx.fillRect(0, CARD_Y, W, CARD_H);
+
+  // Badge "AUTOPARTES DISPONIBLES"
+  const BADGE_Y = CARD_Y + 32;
+  rr(ctx, 40, BADGE_Y, W - 80, 82, 14, COLOR.azul);
+  ctx.fillStyle = COLOR.blanco;
+  ctx.font      = `900 48px ${FONT.bc}`;
+  ctx.textAlign = "center";
+  ctx.fillText("AUTOPARTES DISPONIBLES", CX, BADGE_Y + 56);
+
+  // Lista de piezas
+  const PIEZAS = ["MOTOR", "CAJA", "CHAPA", "INTERIOR"];
+  ctx.textAlign = "left";
+  PIEZAS.forEach((p, i) => {
+    const py = BADGE_Y + 120 + i * 54;
+    ctx.fillStyle = COLOR.azul;
+    ctx.font      = `800 40px ${FONT.bc}`;
+    ctx.fillText("✓", 80, py);
+    ctx.fillStyle = COLOR.negro;
+    ctx.font      = `700 40px ${FONT.bc}`;
+    ctx.fillText(p, 148, py);
+  });
+
+  // WhatsApp CTA
+  const WSP_Y = H - ZONE.footer - ZONE.wsp;
+  drawWhatsappCTA(ctx, WSP_Y);
+
+  // Footer
+  drawFooter(ctx, H - ZONE.footer);
+}
+
+// ─────────────────────────────────────────────
+// LAYOUT: DOS FOTOS — layout-double.js
+// ─────────────────────────────────────────────
+// Orden: HEADER · FOTO SUPERIOR (con badge) · SEPARADOR · FOTO INFERIOR · WHATSAPP · FOOTER
+
+function renderTwoPhotos(ctx, { imgA, imgB, logo, marca, modelo }) {
+  // Altura disponible para las dos fotos
+  const FOTOS_TOTAL = H - ZONE.header - ZONE.sep - ZONE.wsp - ZONE.footer;
+  const FOTO1_H     = Math.round(FOTOS_TOTAL * 0.53);  // 53 % arriba
+  const FOTO2_H     = FOTOS_TOTAL - FOTO1_H;           // 47 % abajo
+
+  const FOTO1_Y = ZONE.header;
+  const SEP_Y   = FOTO1_Y + FOTO1_H;
+  const FOTO2_Y = SEP_Y + ZONE.sep;
+  const WSP_Y   = FOTO2_Y + FOTO2_H;
+
+  // Fondo
+  ctx.fillStyle = COLOR.azulMid;
+  ctx.fillRect(0, 0, W, H);
+
+  // Header
+  drawHeader(ctx, logo);
+
+  // Foto superior
+  cover(ctx, imgA, 0, FOTO1_Y, W, FOTO1_H);
+
+  // Viñeta derecha para que el badge se lea mejor
+  const vgR = ctx.createLinearGradient(W * 0.42, 0, W, 0);
+  vgR.addColorStop(0, "rgba(0,6,24,0)");
+  vgR.addColorStop(1, "rgba(0,6,24,0.68)");
+  ctx.fillStyle = vgR;
+  ctx.fillRect(0, FOTO1_Y, W, FOTO1_H);
+
+  // Badge superpuesto — esquina superior derecha de la foto
+  const BDG_W  = 390;
+  const BDG_H  = 360;
+  const BDG_X  = W - BDG_W - 24;
+  const BDG_Y  = FOTO1_Y + Math.max(24, (FOTO1_H - BDG_H) / 2 - 10);
+  drawBadge(ctx, BDG_X, BDG_Y, marca, modelo);
+
+  // Separador
+  drawSeparator(ctx, SEP_Y);
+
+  // Foto inferior
+  cover(ctx, imgB, 0, FOTO2_Y, W, FOTO2_H);
+
+  // WhatsApp CTA
+  drawWhatsappCTA(ctx, WSP_Y);
+
+  // Footer
+  drawFooter(ctx, H - ZONE.footer);
+}
+
+// ─────────────────────────────────────────────
+// RENDER PRINCIPAL — render.js
+// ─────────────────────────────────────────────
+
+async function render(canvas) {
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  const [imgA, imgB, logo] = await Promise.all([
+    loadImg(fotos[0]),
+    loadImg(fotos[1]),
+    loadImg(LOGO_URL),
+  ]);
+
+  const data = {
+    imgA,
+    imgB,
+    logo,
+    marca:  (V.marca  || "").toUpperCase(),
+    modelo: (V.modelo || "").toUpperCase(),
+  };
+
+  if (imgB) {
+    renderTwoPhotos(ctx, data);
+  } else {
+    renderSinglePhoto(ctx, data);
+  }
+}
+
+// ─────────────────────────────────────────────
+// INFRAESTRUCTURA (Supabase, UI, descarga)
+// ─────────────────────────────────────────────
+
+let V    = null;
+let fotos = [null, null];
+
+async function loadFonts() {
+  const pairs = [
+    ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxwL3I-JCGChYJ8VI-L6OO_au7B43LSmQ.woff2",     "900"],
+    ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B4973mhdSqmM.woff2","700"],
+  ];
+  await Promise.all(pairs.map(([url, w]) => {
+    const f = new FontFace("BC", `url(${url})`, { weight: w });
+    return f.load().then(loaded => document.fonts.add(loaded)).catch(() => {});
+  }));
+  await document.fonts.ready;
+}
+
+async function loadImg(url) {
+  if (!url) return null;
+  return new Promise(res => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload  = () => res(img);
+    img.onerror = () => {
+      const i2 = new Image();
+      i2.onload  = () => res(i2);
+      i2.onerror = () => res(null);
+      i2.src = url;
+    };
+    img.src = url;
+  });
+}
+
+async function actualizarPreview() {
+  const cv = document.getElementById("cv");
+  const ld = document.getElementById("loading");
+  ld.style.display = "block";
+  cv.style.display  = "none";
+  await render(cv);
+  ld.style.display = "none";
+  cv.style.display  = "block";
+}
+
+function swap() {
+  [fotos[0], fotos[1]] = [fotos[1], fotos[0]];
+  actualizarSlots();
+  actualizarPreview();
+}
+
+function actualizarSlots() {
+  [["a", 0], ["b", 1]].forEach(([s, i]) => {
+    const slot  = document.getElementById("slot-" + s);
+    const empty = document.getElementById("slot-" + s + "-empty");
+    const url   = fotos[i];
+    const old   = slot.querySelector("img");
+    if (url) {
+      empty.style.display = "none";
+      if (old) { old.src = url; }
+      else {
+        const img = document.createElement("img");
+        img.src   = url;
+        slot.insertBefore(img, slot.querySelector(".foto-slot-label"));
+      }
+    } else {
+      empty.style.display = "flex";
+      if (old) old.remove();
+    }
+  });
+}
+
+async function descargar() {
+  const btn = document.getElementById("btn-dl");
+  btn.disabled    = true;
+  btn.textContent = "Generando…";
+  const cv    = document.createElement("canvas");
+  await render(cv);
+  const nombre = "post_" +
+    (V.marca  || "").toLowerCase() + "_" +
+    (V.modelo || "").toLowerCase().replace(/\s+/g, "_") + ".jpg";
+  cv.toBlob(blob => {
+    const a   = document.createElement("a");
+    a.href     = URL.createObjectURL(blob);
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    btn.disabled    = false;
+    btn.textContent = "⬇ Descargar Publicación 1080×1350";
+  }, "image/jpeg", 0.95);
+}
+
+async function init() {
+  await loadFonts();
+  const id = new URLSearchParams(location.search).get("id");
+  if (!id) return;
+  const { data } = await sb.from("vehiculos").select("*").eq("id", id).single();
+  if (!data) return;
+  V     = data;
+  fotos = Array.isArray(data.fotos)
+    ? [data.fotos[0] || null, data.fotos[1] || null]
+    : [null, null];
+  document.getElementById("ctrl-nombre").textContent =
+    (data.marca || "") + " " + (data.modelo || "");
+  const d = [
+    data.anio,
+    data.km ? Number(data.km).toLocaleString("es-AR") + " km" : null,
+  ].filter(Boolean).join(" · ");
+  document.getElementById("ctrl-datos").textContent = d;
+  actualizarSlots();
+  await actualizarPreview();
+}
+
+init();
+</script>
 </body>
 </html>
