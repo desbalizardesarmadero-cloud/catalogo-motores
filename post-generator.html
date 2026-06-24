@@ -178,138 +178,167 @@
 
       if (hasTwo) {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DISEÑO DOS FOTOS — layout mixto horizontal/vertical
+        // DISEÑO DOS FOTOS — estilo MG: foto grande arriba, datos abajo
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        // Medidas
-        const FOTO1_X = 0,   FOTO1_Y = 0,   FOTO1_W = 700, FOTO1_H = 620;
-        const PANEL_X = 700, PANEL_Y = 0,   PANEL_W = 380, PANEL_H = 620;
-        const FOTO2_X = 0,   FOTO2_Y = 620, FOTO2_W = 1080, FOTO2_H = 380;
-        const CTA_Y   = 1000, CTA_H  = 350;
+        const FOTO_H = 780;          // foto principal ocupa 780px de alto
+        const FOTO2_Y = FOTO_H;      // segunda foto debajo
+        const FOTO2_H = 200;
+        const DATOS_Y = FOTO_H + FOTO2_H;  // zona de datos
+        const DATOS_H = H - DATOS_Y;
 
-        // Fondo base
-        ctx.fillStyle = BLANCO;
+        // FONDO NEGRO base
+        ctx.fillStyle = NEGRO;
         ctx.fillRect(0, 0, W, H);
 
-        // FOTO 1 — izquierda arriba
-        cover(ctx, imgA, FOTO1_X, FOTO1_Y, FOTO1_W, FOTO1_H);
+        // FOTO 1 — hero grande arriba
+        cover(ctx, imgA, 0, 0, W, FOTO_H);
 
-        // PANEL DERECHO oscuro
-        ctx.fillStyle = NEGRO;
-        ctx.fillRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H);
-
-        // Acento amarillo — franja vertical izquierda del panel
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(PANEL_X, PANEL_Y, 6, PANEL_H);
-
-        // MARCA en el panel
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#00AEEF";
-        ctx.font = `900 72px ${BC}`;
-        // reducir si es muy larga
-        let mfs = 72;
-        while (ctx.measureText((v.marca||"").toUpperCase()).width > PANEL_W - 50 && mfs > 36) {
-          mfs -= 3; ctx.font = `900 ${mfs}px ${BC}`;
-        }
-        ctx.fillText((v.marca || "").toUpperCase(), PANEL_X + 24, 130);
-
-        // MODELO — solo primera palabra
-        const modeloSimple = (v.modelo || "").split(" ")[0].toUpperCase();
-        let mfs2 = 62;
-        ctx.font = `800 ${mfs2}px ${BC}`;
-        while (ctx.measureText(modeloSimple).width > PANEL_W - 50 && mfs2 > 30) {
-          mfs2 -= 3; ctx.font = `800 ${mfs2}px ${BC}`;
-        }
-        ctx.fillStyle = BLANCO;
-        ctx.fillText(modeloSimple, PANEL_X + 24, 210);
-
-        // Línea separadora amarilla
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(PANEL_X + 24, 235, 80, 4);
-
-        // SUBTÍTULO
-        ctx.fillStyle = AMARILLO;
-        ctx.font = `700 36px ${BC}`;
-        ctx.fillText("DESARME", PANEL_X + 24, 305);
-        ctx.fillStyle = "rgba(255,255,255,0.7)";
-        ctx.font = `600 32px ${BC}`;
-        ctx.fillText("INGRESADO", PANEL_X + 24, 350);
-
-        // AÑO si existe
-        if (v.anio) {
-          ctx.fillStyle = "rgba(255,255,255,0.35)";
-          ctx.font = `500 30px ${DM}`;
-          ctx.fillText("Año " + v.anio, PANEL_X + 24, 420);
-        }
-
-        // KM si existe
-        if (v.km) {
-          ctx.fillStyle = "rgba(255,255,255,0.35)";
-          ctx.font = `500 28px ${DM}`;
-          ctx.fillText(Number(v.km).toLocaleString("es-AR") + " km", PANEL_X + 24, 460);
-        }
-
-        // Texto contacto mini en panel
-        ctx.fillStyle = "rgba(255,255,255,0.5)";
-        ctx.font = `400 24px ${DM}`;
-        ctx.fillText("📲 2314 545224", PANEL_X + 24, 560);
-
-        // FOTO 2 — full width abajo
-        cover(ctx, imgB, FOTO2_X, FOTO2_Y, FOTO2_W, FOTO2_H);
-        // degradado inferior sobre foto 2
-        gradV(ctx, 0, FOTO2_Y + FOTO2_H - 120, W, 120, [
+        // Degradado oscuro inferior sobre foto 1 (para leer marca)
+        gradV(ctx, 0, FOTO_H - 380, W, 380, [
           [0, "rgba(0,0,0,0)"],
-          [1, "rgba(0,0,0,0.45)"]
+          [1, "rgba(0,0,0,0.82)"]
         ]);
 
-        // DOMINIO sobre foto 1 — arriba izquierda
+        // BADGE "DESARME INGRESADO" arriba izquierda
+        const badgeTxt = "DESARME INGRESADO";
+        ctx.font = `700 32px ${BC}`;
+        const bw = ctx.measureText(badgeTxt).width + 48;
+        ctx.fillStyle = AMARILLO;
+        ctx.fillRect(40, 40, bw, 62);
+        ctx.fillStyle = NEGRO;
+        ctx.textAlign = "left";
+        ctx.fillText(badgeTxt, 64, 82);
+
+        // BADGE DOMINIO/RUDAC arriba derecha
         if (dominio) {
-          roundRect(ctx, 25, 25, 220, 70, 12, AZUL);
-          ctx.fillStyle = BLANCO;
-          ctx.font = `700 40px ${BC}`;
+          ctx.font = `700 32px ${BC}`;
+          const dw = ctx.measureText(dominio).width + 48;
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          roundRect(ctx, W - dw - 40, 40, dw, 62, 8, "rgba(0,0,0,0.6)");
+          ctx.strokeStyle = "rgba(255,255,255,0.25)";
+          ctx.lineWidth = 1.5;
+          roundRect(ctx, W - dw - 40, 40, dw, 62, 8, null, "rgba(255,255,255,0.25)");
+          ctx.fillStyle = "rgba(255,255,255,0.8)";
           ctx.textAlign = "left";
-          ctx.fillText(dominio, 45, 73);
+          ctx.fillText(dominio, W - dw - 16, 82);
         }
 
-        // LOGO arriba derecha del panel
+        // MARCA — enorme en amarillo sobre la foto
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,0.9)";
+        ctx.shadowBlur = 24;
+        let mfs = 130;
+        ctx.font = `900 ${mfs}px ${BC}`;
+        const marcaStr = (v.marca || "").toUpperCase();
+        while (ctx.measureText(marcaStr).width > W - 80 && mfs > 60) {
+          mfs -= 4; ctx.font = `900 ${mfs}px ${BC}`;
+        }
+        ctx.fillStyle = AMARILLO;
+        ctx.fillText(marcaStr, cx, FOTO_H - 165);
+
+        // MODELO — blanco debajo de marca
+        let mfs2 = 88;
+        ctx.font = `700 ${mfs2}px ${BC}`;
+        const modeloStr = (v.modelo || "").toUpperCase();
+        while (ctx.measureText(modeloStr).width > W - 80 && mfs2 > 42) {
+          mfs2 -= 3; ctx.font = `700 ${mfs2}px ${BC}`;
+        }
+        ctx.fillStyle = BLANCO;
+        ctx.fillText(modeloStr, cx, FOTO_H - 60);
+        ctx.shadowBlur = 0;
+
+        // FOTO 2 — franja secundaria debajo de foto 1
+        cover(ctx, imgB, 0, FOTO2_Y, W, FOTO2_H);
+        // degradado en ambos extremos de foto 2 para que fluya
+        gradV(ctx, 0, FOTO2_Y, W, 60, [
+          [0, "rgba(0,0,0,0.55)"],
+          [1, "rgba(0,0,0,0)"]
+        ]);
+        gradV(ctx, 0, FOTO2_Y + FOTO2_H - 60, W, 60, [
+          [0, "rgba(0,0,0,0)"],
+          [1, "rgba(17,17,17,1)"]
+        ]);
+
+        // SPECS — badges en fila sobre fondo negro
+        const specs = [];
+        if (v.anio) specs.push({ label: "AÑO", value: String(v.anio), hl: true });
+        if (v.km)   specs.push({ label: "KM",  value: Number(v.km).toLocaleString("es-AR"), hl: false });
+        if (v.cilindrada) specs.push({ label: "CILINDRADA", value: String(v.cilindrada), hl: false });
+
+        const SPEC_Y = DATOS_Y + 36;
+        const SPEC_H = 140;
+        const SW = specs.length > 0 ? Math.floor((W - 80 - (specs.length - 1) * 16) / specs.length) : 0;
+        specs.forEach((sp, i) => {
+          const sx = 40 + i * (SW + 16);
+          // fondo badge
+          ctx.fillStyle = "#1c1c1c";
+          roundRect(ctx, sx, SPEC_Y, SW, SPEC_H, 8, "#1c1c1c");
+          // stroke sutil
+          ctx.strokeStyle = "#2a2a2a";
+          ctx.lineWidth = 1;
+          roundRect(ctx, sx, SPEC_Y, SW, SPEC_H, 8, null, "#2a2a2a");
+          // label
+          ctx.textAlign = "center";
+          ctx.fillStyle = "rgba(255,255,255,0.4)";
+          ctx.font = `500 22px ${DM}`;
+          ctx.fillText(sp.label, sx + SW / 2, SPEC_Y + 44);
+          // value
+          ctx.fillStyle = sp.hl ? AMARILLO : BLANCO;
+          ctx.font = `900 52px ${BC}`;
+          ctx.fillText(sp.value, sx + SW / 2, SPEC_Y + 108);
+        });
+
+        // LÍNEA SEPARADORA
+        ctx.fillStyle = "#222";
+        ctx.fillRect(40, SPEC_Y + SPEC_H + 30, W - 80, 1);
+
+        // CTA TEXTO
+        ctx.textAlign = "center";
+        ctx.fillStyle = "rgba(255,255,255,0.45)";
+        ctx.font = `600 30px ${DM}`;
+        ctx.fillText("PEDÍ LA PIEZA QUE NECESITÁS", cx, SPEC_Y + SPEC_H + 80);
+
+        // BOTÓN WHATSAPP
+        const btnY = SPEC_Y + SPEC_H + 100;
+        const btnH = 110;
+        roundRect(ctx, 40, btnY, W - 80, btnH, 10, AZUL);
+
+        // icono WSP (círculo blanco + letra)
+        const icX = 40 + 56, icY = btnY + btnH / 2;
+        ctx.beginPath(); ctx.arc(icX, icY, 30, 0, Math.PI * 2);
+        ctx.fillStyle = BLANCO; ctx.fill();
+        ctx.fillStyle = AZUL;
+        ctx.font = `900 34px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("W", icX, icY + 12);
+
+        ctx.fillStyle = BLANCO;
+        ctx.font = `900 62px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("2235 534-522", cx + 20, btnY + 74);
+
+        // PIE CORPORATIVO azul
+        const PIE_H = 70;
+        ctx.fillStyle = AZUL;
+        ctx.fillRect(0, H - PIE_H, W, PIE_H);
+
+        // Logo círculo en el pie
         if (logoImg) {
-          const LR = 85;
-          const LX = W - LR - 20, LY = LR + 20;
+          const LR = 26;
+          const LX = 40 + LR, LY = H - PIE_H / 2;
           ctx.save();
           ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
           ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
           ctx.restore();
-          ctx.beginPath(); ctx.arc(LX, LY, LR + 4, 0, Math.PI * 2);
-          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 4; ctx.stroke();
+          ctx.beginPath(); ctx.arc(LX, LY, LR + 2, 0, Math.PI * 2);
+          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 2.5; ctx.stroke();
         }
 
-        // SECTOR INFERIOR CTA — fondo blanco
-        ctx.fillStyle = BLANCO;
-        ctx.fillRect(0, CTA_Y, W, CTA_H);
-
-        // Línea superior de separación azul
-        ctx.fillStyle = AZUL;
-        ctx.fillRect(0, CTA_Y, W, 6);
-
-        // MENSAJE PRINCIPAL
-        ctx.fillStyle = NEGRO;
-        ctx.textAlign = "center";
-        ctx.font = `900 58px ${BC}`;
-        ctx.fillText("PEDÍ LA PIEZA", cx, 1090);
-        ctx.fillText("QUE NECESITÁS", cx, 1160);
-
-        // WHATSAPP
-        ctx.fillStyle = AZUL;
-        ctx.font = `900 74px ${BC}`;
-        ctx.fillText("📲 2314 545224", cx, 1265);
-
-        // PIE azul
-        ctx.fillStyle = AZUL;
-        ctx.fillRect(0, H - 70, W, 70);
         ctx.fillStyle = BLANCO;
         ctx.font = `700 28px ${BC}`;
         ctx.textAlign = "center";
-        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx, H - 22);
+        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx + 20, H - PIE_H / 2 + 10);
 
       } else {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
