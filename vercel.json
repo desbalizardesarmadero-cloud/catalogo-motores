@@ -6,6 +6,7 @@
     { "source": "/motor", "destination": "/motor.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/links", "destination": "/links.html" },
-    { "source": "/story", "destination": "/story-generator.html" }
+    { "source": "/story", "destination": "/story-generator.html" },
+    { "source": "/post", "destination": "/post-generator.html" }
   ]
 }
