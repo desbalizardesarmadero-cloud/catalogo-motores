@@ -156,14 +156,18 @@
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext("2d");
       const v = V;
-      const BG   = "#060A10";
-      const cx   = W / 2;
-      const BC   = "BC, 'Arial Black', Arial";
-      const DM   = "'DM Sans', Arial";
-      const CYAN = "#00C8FF";
-      const hasTwo = fotos[0] && fotos[1];
+      const cx  = W / 2;
+      const BC  = "BC, 'Arial Black', Arial";
+      const DM  = "'DM Sans', Arial";
 
-      ctx.fillStyle = BG;
+      // Paleta Desbalizar
+      const AZUL     = "#0057B8";
+      const AMARILLO = "#FFD400";
+      const BLANCO   = "#FFFFFF";
+      const NEGRO    = "#101010";
+
+      // Fondo blanco
+      ctx.fillStyle = BLANCO;
       ctx.fillRect(0, 0, W, H);
 
       const [imgA, imgB, logoImg] = await Promise.all([
@@ -172,129 +176,118 @@
         loadImg(LOGO_URL),
       ]);
 
-      if (hasTwo) {
-        // ── DOS FOTOS: izquierda arriba + derecha abajo, cada una mitad ──
-        const FOTO_H = 560;
-        // Foto 1 — arriba izquierda (2/3 del ancho)
-        cover(ctx, imgA, 0, 0, W * 0.62, FOTO_H);
-        // Foto 2 — abajo derecha (1/3 del ancho)
-        cover(ctx, imgB, W * 0.62, 0, W * 0.38, FOTO_H);
-        // línea divisoria vertical
-        ctx.fillStyle = BG;
-        ctx.fillRect(W * 0.62 - 3, 0, 6, FOTO_H);
-        // degradado inferior sobre fotos
-        gradV(ctx, 0, FOTO_H - 200, W, 200, [
-          [0, "rgba(6,10,16,0)"],
-          [1, "rgba(6,10,16,1)"]
-        ]);
-      } else {
-        // ── UNA SOLA FOTO arriba ──
-        const FOTO_H = 620;
-        cover(ctx, imgA, 0, 0, W, FOTO_H);
-        gradV(ctx, 0, FOTO_H - 280, W, 280, [
-          [0, "rgba(6,10,16,0)"],
-          [1, "rgba(6,10,16,1)"]
-        ]);
+      // ── FOTO PRINCIPAL: 70% superior (850px) ──
+      const FOTO_H = 850;
+      cover(ctx, imgA, 0, 0, W, FOTO_H);
+
+      // Degradado inferior sobre foto para legibilidad del texto
+      gradV(ctx, 0, FOTO_H - 320, W, 320, [
+        [0, "rgba(0,0,0,0)"],
+        [1, "rgba(0,0,0,0.72)"]
+      ]);
+
+      // ── SEGUNDA FOTO pequeña superpuesta esquina inferior derecha ──
+      if (imgB) {
+        ctx.save();
+        roundRect(ctx, W - 300, FOTO_H - 220, 240, 170, 18, BLANCO);
+        ctx.restore();
+        cover(ctx, imgB, W - 290, FOTO_H - 210, 220, 150);
+        // borde
+        ctx.strokeStyle = BLANCO;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(W - 290, FOTO_H - 210, 220, 150, 14);
+        ctx.stroke();
       }
 
-      const FOTO_H = hasTwo ? 560 : 620;
-
-      // ── PANEL DERECHO OSCURO (info) ──
-      // Fondo oscuro desde FOTO_H hasta la franja de specs
-      ctx.fillStyle = BG;
-      ctx.fillRect(0, FOTO_H, W, H - FOTO_H);
-
-      // Código dominio — badge arriba izquierda sobre foto
+      // ── PATENTE / DOMINIO arriba izquierda ──
       const dominio = v.dominio || v.rudac || "";
       if (dominio) {
-        roundRect(ctx, 28, 28, 180, 54, 10, "rgba(0,200,255,0.15)", "rgba(0,200,255,0.5)");
-        ctx.fillStyle = CYAN;
-        ctx.font = `700 30px ${BC}`;
+        roundRect(ctx, 40, 40, 260, 90, 12, BLANCO, "#D9D9D9");
+        ctx.fillStyle = NEGRO;
+        ctx.font = `800 56px ${BC}`;
         ctx.textAlign = "left";
-        ctx.letterSpacing = "2px";
-        ctx.fillText(dominio.toUpperCase(), 44, 28 + 36);
-        ctx.letterSpacing = "0px";
+        ctx.fillText(dominio.toUpperCase(), 65, 100);
       }
 
-      // Logo arriba derecha
+      // ── LOGO arriba derecha ──
       if (logoImg) {
-        const LR = 48;
+        const LR = 75;
         const LX = W - LR - 28, LY = LR + 28;
         ctx.save();
         ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
         ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
         ctx.restore();
-        ctx.beginPath(); ctx.arc(LX, LY, LR + 3, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(0,200,255,0.35)"; ctx.lineWidth = 3; ctx.stroke();
+        ctx.beginPath(); ctx.arc(LX, LY, LR + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = AMARILLO; ctx.lineWidth = 4; ctx.stroke();
       }
 
-      // ── BLOQUE TEXTO ──
-      ctx.textAlign = "left";
-      const TX = 60; // margen izquierdo texto
-      let ty = FOTO_H + 60;
+      // ── MARCA Y MODELO sobre la foto (parte inferior) ──
+      ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(0,0,0,.7)";
+      ctx.shadowBlur = 20;
 
-      // MARCA
-      ctx.fillStyle = CYAN;
-      ctx.font = `800 ${hasTwo ? 90 : 100}px ${BC}`;
-      ctx.letterSpacing = "4px";
-      ctx.fillText((v.marca || "").toUpperCase(), TX, ty);
-      ctx.letterSpacing = "0px";
-      ty += hasTwo ? 85 : 95;
+      ctx.fillStyle = BLANCO;
+      ctx.font = `900 105px ${BC}`;
+      ctx.fillText((v.marca || "").toUpperCase(), W / 2, FOTO_H - 150);
 
-      // MODELO — puede ser largo, reduce fuente
+      // Modelo — reduce si es muy largo
+      let mfs = 82;
+      ctx.font = `800 ${mfs}px ${BC}`;
       const modelo = (v.modelo || "").toUpperCase();
-      let mfs = hasTwo ? 72 : 80;
-      ctx.font = `700 ${mfs}px ${BC}`;
-      while (ctx.measureText(modelo).width > W - TX - 60 && mfs > 42) {
+      while (ctx.measureText(modelo).width > W - 80 && mfs > 48) {
         mfs -= 3;
-        ctx.font = `700 ${mfs}px ${BC}`;
+        ctx.font = `800 ${mfs}px ${BC}`;
       }
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fillText(modelo, TX, ty);
-      ty += Math.round(mfs * 0.95) + 10;
+      ctx.fillText(modelo, W / 2, FOTO_H - 70);
+      ctx.shadowBlur = 0;
 
-      // Línea separadora cyan
-      ctx.fillStyle = CYAN;
-      ctx.fillRect(TX, ty, 80, 4);
-      ty += 36;
+      // ── BANDA AZUL "AUTOPARTES DISPONIBLES" ──
+      roundRect(ctx, 40, FOTO_H + 40, W - 80, 90, 16, AZUL);
+      ctx.fillStyle = BLANCO;
+      ctx.font = `900 52px ${BC}`;
+      ctx.textAlign = "center";
+      ctx.fillText("AUTOPARTES DISPONIBLES", W / 2, FOTO_H + 100);
 
-      // SPECS: año, cilindrada, km
-      const specs = [];
-      if (v.anio) specs.push({ label: "AÑO", val: String(v.anio) });
-      if (v.cilindrada) specs.push({ label: "MOTOR", val: v.cilindrada });
-      if (v.km) specs.push({ label: "KM", val: Number(v.km).toLocaleString("es-AR") });
-      else specs.push({ label: "KM", val: "N/A" });
-
-      specs.forEach(({ label, val }) => {
-        ctx.fillStyle = "rgba(255,255,255,0.45)";
-        ctx.font = `400 30px ${DM}`;
-        ctx.fillText("* " + label + " " + val, TX, ty);
-        ty += 46;
+      // ── LISTA DE PIEZAS ──
+      const piezas = ["MOTOR", "CAJA", "CHAPA", "INTERIOR"];
+      ctx.fillStyle = NEGRO;
+      ctx.font = `700 42px ${BC}`;
+      ctx.textAlign = "left";
+      piezas.forEach((pieza, i) => {
+        // checks en amarillo
+        ctx.fillStyle = AZUL;
+        ctx.fillText("✓", 80, FOTO_H + 190 + i * 62);
+        ctx.fillStyle = NEGRO;
+        ctx.fillText("  " + pieza, 80 + 50, FOTO_H + 190 + i * 62);
       });
 
-      ty += 20;
-
-      // BOTÓN "Piezas Disponibles"
-      const btnW = W - TX * 2, btnH = 90, btnR = 45;
-      roundRect(ctx, TX, ty, btnW, btnH, btnR, CYAN, "none");
-      ctx.fillStyle = "#060A10";
-      ctx.font = `700 44px ${BC}`;
+      // ── WHATSAPP ──
+      ctx.fillStyle = AZUL;
+      ctx.font = `900 62px ${BC}`;
       ctx.textAlign = "center";
-      ctx.letterSpacing = "2px";
-      ctx.fillText("Piezas Disponibles", TX + btnW / 2, ty + 58);
-      ctx.letterSpacing = "0px";
-      ty += btnH + 36;
+      ctx.fillText("📲 2314 545224", W / 2, FOTO_H + 500);
 
-      // FIRMA inferior
-      ctx.fillStyle = "rgba(255,255,255,0.15)";
-      ctx.font = `300 26px ${DM}`;
+      // ── FINANCIACIÓN ──
+      ctx.fillStyle = "#101010";
+      ctx.font = `900 42px ${BC}`;
+      // Badge amarillo
+      roundRect(ctx, 100, FOTO_H + 522, W - 200, 66, 12, AMARILLO);
+      ctx.fillStyle = NEGRO;
+      ctx.font = `800 40px ${BC}`;
       ctx.textAlign = "center";
-      ctx.letterSpacing = "3px";
-      ctx.fillText("DESBALIZAR S.A.  ·  BOLÍVAR, BUENOS AIRES", cx, H - 32);
-      ctx.letterSpacing = "0px";
+      ctx.fillText("3 CUOTAS SIN INTERÉS", W / 2, FOTO_H + 566);
+
+      // ── FRANJA CORPORATIVA INFERIOR ──
+      ctx.fillStyle = AZUL;
+      ctx.fillRect(0, H - 90, W, 90);
+      ctx.fillStyle = BLANCO;
+      ctx.font = `700 34px ${BC}`;
+      ctx.textAlign = "center";
+      ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", W / 2, H - 32);
     }
 
-    async function actualizarPreview() {
+        async function actualizarPreview() {
       const cv = document.getElementById("cv");
       const ld = document.getElementById("loading");
       ld.style.display = "block"; cv.style.display = "none";
