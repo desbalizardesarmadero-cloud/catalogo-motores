@@ -94,7 +94,6 @@
       const pairs = [
         ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxwL3I-JCGChYJ8VI-L6OO_au7B43LSmQ.woff2", "900"],
         ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B4973mhdSqmM.woff2", "700"],
-        ["https://fonts.gstatic.com/s/barlowcondensed/v12/HTxxL3I-JCGChYJ8VI-L6OO_au7B46Z1mhdSqmM.woff2", "500"],
       ];
       await Promise.all(pairs.map(([url, w]) => {
         const f = new FontFace("BC", `url(${url})`, { weight: w });
@@ -109,18 +108,13 @@
         const img = new Image();
         img.crossOrigin = "anonymous";
         img.onload = () => res(img);
-        img.onerror = () => {
-          const img2 = new Image();
-          img2.onload = () => res(img2);
-          img2.onerror = () => res(null);
-          img2.src = url;
-        };
+        img.onerror = () => { const i2 = new Image(); i2.onload = () => res(i2); i2.onerror = () => res(null); i2.src = url; };
         img.src = url;
       });
     }
 
     function cover(ctx, img, x, y, w, h) {
-      if (!img) { ctx.fillStyle = "#08111E"; ctx.fillRect(x, y, w, h); return; }
+      if (!img) { ctx.fillStyle = "#111"; ctx.fillRect(x, y, w, h); return; }
       const s = Math.max(w / img.width, h / img.height);
       const sw = img.width * s, sh = img.height * s;
       ctx.save();
@@ -131,325 +125,274 @@
 
     function gradV(ctx, x, y, w, h, stops) {
       const g = ctx.createLinearGradient(0, y, 0, y + h);
-      stops.forEach(([pos, color]) => g.addColorStop(pos, color));
-      ctx.fillStyle = g;
-      ctx.fillRect(x, y, w, h);
+      stops.forEach(([p, c]) => g.addColorStop(p, c));
+      ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
     }
 
-    function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+    function rr(ctx, x, y, w, h, r, fill, stroke, sw) {
       ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.arcTo(x + w, y, x + w, y + r, r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-      ctx.lineTo(x + r, y + h);
-      ctx.arcTo(x, y + h, x, y + h - r, r);
-      ctx.lineTo(x, y + r);
-      ctx.arcTo(x, y, x + r, y, r);
+      ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+      ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+      ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+      ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r);
       ctx.closePath();
       if (fill) { ctx.fillStyle = fill; ctx.fill(); }
-      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = sw||2; ctx.stroke(); }
     }
 
     async function render(canvas) {
       canvas.width = W; canvas.height = H;
       const ctx = canvas.getContext("2d");
-      const v   = V;
-      const cx  = W / 2;
-      const BC  = "BC, 'Arial Black', Arial";
-      const DM  = "'DM Sans', Arial";
+      const v = V, cx = W / 2;
+      const BC = "BC,'Arial Black',Arial";
+      const DM = "'DM Sans',Arial";
+      const AZUL = "#0057B8", AMARILLO = "#FFD400", BLANCO = "#FFFFFF", NEGRO = "#111111";
+      const AZUL_OSC = "#001A3D";
 
-      const AZUL     = "#0057B8";
-      const AMARILLO = "#FFD400";
-      const BLANCO   = "#FFFFFF";
-      const NEGRO    = "#111111";
-
-      // Detectar si es vehículo (viene de init con tabla vehiculos) o motor
-      const esVehiculo = !!(v.anio !== undefined && v.dominio !== undefined || v.rudac !== undefined && v.km !== undefined && v.anio !== undefined);
-      const tieneMotorFlag = !!(v.cilindrada && !v.anio && !v.dominio);
-
-      const [imgA, imgB, logoImg] = await Promise.all([
-        loadImg(fotos[0]),
-        loadImg(fotos[1]),
-        loadImg(LOGO_URL),
+      const [imgA, imgB, logo] = await Promise.all([
+        loadImg(fotos[0]), loadImg(fotos[1]), loadImg(LOGO_URL)
       ]);
 
       const dominio = (v.dominio || v.rudac || "").toUpperCase();
-      const hasImgB = !!imgB;
+      const marca   = (v.marca  || "").toUpperCase();
+      const modelo  = (v.modelo || "").toUpperCase();
 
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      // DISEÑO VEHÍCULO — aplica cuando hay anio (tabla vehiculos)
-      // Layout: header azul oscuro / foto(s) / specs / WSP / pie
-      // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      if (v.anio) {
+      // ══════════════════════════════════════════════════════
+      // DISEÑO VEHÍCULO — siempre que venga de tabla vehiculos
+      // ══════════════════════════════════════════════════════
+      if (v.anio !== undefined) {
 
-        // Calcular specs disponibles
+        // ── 1. MEDIDAS FIJAS ──
+        const HDR  = 240;   // header azul oscuro
+        const SEP  = 10;    // franja amarilla separadora
+        const PIE  = 90;    // pie azul oscuro
+        const WSP  = 130;   // botón whatsapp
+        const PAD  = 24;    // padding vertical entre secciones
+
+        // Specs disponibles
         const specs = [];
-        if (v.anio)       specs.push({ label: "AÑO",       value: String(v.anio),                             hl: true  });
-        if (v.km)         specs.push({ label: "KM",         value: Number(v.km).toLocaleString("es-AR") + " km", hl: false });
-        if (v.cilindrada) specs.push({ label: "CILINDRADA", value: String(v.cilindrada),                       hl: false });
+        if (v.anio)       specs.push({ l:"AÑO",        v: String(v.anio),                                  amarillo: true });
+        if (v.km)         specs.push({ l:"KM",          v: Number(v.km).toLocaleString("es-AR") + " km",   amarillo: false });
+        if (v.cilindrada) specs.push({ l:"CILINDRADA",  v: String(v.cilindrada),                            amarillo: false });
 
-        // Alturas fijas de cada zona
-        const HDR_H   = 154;   // header corporativo
-        const SEP_H   = 8;     // línea amarilla separadora
-        const SPEC_H  = specs.length > 0 ? 32 + 120 : 0;  // padding + badge
-        const WSP_H   = 120;   // botón whatsapp
-        const PIE_H   = 80;    // pie corporativo
-        const GAP     = 20;    // espaciado entre botón y pie
+        const SPH = specs.length > 0 ? PAD + 140 : 0;  // altura zona specs
 
-        // La foto llena TODO lo restante
-        const FOTO_H  = H - HDR_H - SEP_H - SPEC_H - WSP_H - PIE_H - GAP;
+        // La foto ocupa el resto exacto
+        const FOTO_H = H - HDR - SEP - SPH - PAD - WSP - PAD - PIE;
+        const FOTO_Y = HDR;
 
-        // ── FONDO BASE ──
-        ctx.fillStyle = "#0A0A0A";
+        // ── 2. FONDO ──
+        ctx.fillStyle = AZUL_OSC;
         ctx.fillRect(0, 0, W, H);
 
-        // ── HEADER AZUL OSCURO ──
-        ctx.fillStyle = "#001F4D";
-        ctx.fillRect(0, 0, W, HDR_H);
+        // ── 3. HEADER ──
+        ctx.fillStyle = AZUL_OSC;
+        ctx.fillRect(0, 0, W, HDR);
 
         // Franja amarilla izquierda
         ctx.fillStyle = AMARILLO;
-        ctx.fillRect(0, 0, 10, HDR_H);
+        ctx.fillRect(0, 0, 16, HDR);
 
-        // Logo — derecha, no toca el texto
-        if (logoImg) {
-          const LR = 34;
-          const LX = W - LR - 30, LY = HDR_H / 2;
+        // Logo — círculo a la derecha, centrado verticalmente
+        if (logo) {
+          const LR = 54, LX = W - 64, LY = HDR / 2;
           ctx.save();
-          ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
-          ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
+          ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI*2); ctx.clip();
+          ctx.drawImage(logo, LX-LR, LY-LR, LR*2, LR*2);
           ctx.restore();
-          ctx.beginPath(); ctx.arc(LX, LY, LR + 3, 0, Math.PI * 2);
-          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 3; ctx.stroke();
-        }
-
-        // Subtítulo
-        ctx.fillStyle = "rgba(255,255,255,0.5)";
-        ctx.font = `500 26px ${DM}`;
-        ctx.textAlign = "left";
-        ctx.fillText("NUEVO VEHÍCULO PARA", 28, 52);
-
-        // Título grande — ancho máximo sin tocar el logo
-        ctx.fillStyle = BLANCO;
-        ctx.font = `900 80px ${BC}`;
-        ctx.fillText("VENTA POR PIEZAS", 28, 132);
-
-        // ── FOTO(S) ──
-        const FY = HDR_H;
-        if (hasImgB) {
-          const f1h = Math.round(FOTO_H * 0.62);
-          const f2h = FOTO_H - f1h;
-          cover(ctx, imgA, 0, FY, W, f1h);
-          cover(ctx, imgB, 0, FY + f1h, W, f2h);
-          // degradado de unión
-          gradV(ctx, 0, FY + f1h - 60, W, 80, [[0,"rgba(10,10,10,0)"],[1,"rgba(10,10,10,0.75)"]]);
-          gradV(ctx, 0, FY + f1h, W, 50, [[0,"rgba(10,10,10,0.75)"],[1,"rgba(10,10,10,0)"]]);
-        } else {
-          cover(ctx, imgA, 0, FY, W, FOTO_H);
-        }
-
-        // Degradado inferior de la zona foto (para leer marca)
-        gradV(ctx, 0, FY + FOTO_H - 400, W, 400, [
-          [0, "rgba(10,10,10,0)"],
-          [1, "rgba(10,10,10,0.96)"]
-        ]);
-
-        // Badge dominio arriba izquierda (sobre foto)
-        if (dominio) {
-          ctx.font = `700 28px ${BC}`;
-          const dw = ctx.measureText(dominio).width + 40;
-          ctx.fillStyle = AZUL;
-          ctx.fillRect(0, FY, dw, 54);
-          ctx.fillStyle = BLANCO;
-          ctx.textAlign = "left";
-          ctx.fillText(dominio, 20, FY + 37);
-        }
-
-        // MARCA — enorme amarilla
-        const marcaStr = (v.marca || "").toUpperCase();
-        ctx.textAlign = "center";
-        ctx.shadowColor = "rgba(0,0,0,1)";
-        ctx.shadowBlur = 32;
-        let mfsV = 148;
-        ctx.font = `900 ${mfsV}px ${BC}`;
-        while (ctx.measureText(marcaStr).width > W - 60 && mfsV > 56) {
-          mfsV -= 4; ctx.font = `900 ${mfsV}px ${BC}`;
-        }
-        ctx.fillStyle = AMARILLO;
-        ctx.fillText(marcaStr, cx, FY + FOTO_H - 160);
-
-        // MODELO — blanco
-        const modeloStr = (v.modelo || "").toUpperCase();
-        let mfsV2 = 76;
-        ctx.font = `700 ${mfsV2}px ${BC}`;
-        while (ctx.measureText(modeloStr).width > W - 60 && mfsV2 > 36) {
-          mfsV2 -= 3; ctx.font = `700 ${mfsV2}px ${BC}`;
-        }
-        ctx.fillStyle = BLANCO;
-        ctx.fillText(modeloStr, cx, FY + FOTO_H - 60);
-        ctx.shadowBlur = 0;
-
-        // ── SEPARADOR AMARILLO ──
-        const SY = HDR_H + FOTO_H;
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(0, SY, W, SEP_H);
-
-        // ── SPECS ──
-        if (specs.length > 0) {
-          const spY = SY + SEP_H + 24;
-          const spH = 120;
-          const gap = 12;
-          const SW  = Math.floor((W - 80 - (specs.length - 1) * gap) / specs.length);
-          specs.forEach((sp, i) => {
-            const sx = 40 + i * (SW + gap);
-            roundRect(ctx, sx, spY, SW, spH, 10, "#181818");
-            ctx.strokeStyle = sp.hl ? AMARILLO : "#282828";
-            ctx.lineWidth = sp.hl ? 2.5 : 1;
-            roundRect(ctx, sx, spY, SW, spH, 10, null, sp.hl ? AMARILLO : "#282828");
-            ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(255,255,255,0.38)";
-            ctx.font = `500 20px ${DM}`;
-            ctx.fillText(sp.label, sx + SW / 2, spY + 36);
-            ctx.fillStyle = sp.hl ? AMARILLO : BLANCO;
-            ctx.font = `900 52px ${BC}`;
-            ctx.fillText(sp.value, sx + SW / 2, spY + 98);
-          });
-        }
-
-        // ── BOTÓN WHATSAPP ──
-        const bY = H - PIE_H - GAP - WSP_H;
-        roundRect(ctx, 40, bY, W - 80, WSP_H, 14, AZUL);
-        // ícono W
-        ctx.beginPath(); ctx.arc(40 + 62, bY + WSP_H / 2, 30, 0, Math.PI * 2);
-        ctx.fillStyle = BLANCO; ctx.fill();
-        ctx.fillStyle = AZUL;
-        ctx.font = `900 32px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("W", 40 + 62, bY + WSP_H / 2 + 11);
-        // número
-        ctx.fillStyle = BLANCO;
-        ctx.font = `900 68px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("2314 545224", cx + 24, bY + 76);
-
-        // ── PIE CORPORATIVO ──
-        ctx.fillStyle = "#001F4D";
-        ctx.fillRect(0, H - PIE_H, W, PIE_H);
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(0, H - PIE_H, 10, PIE_H);
-        ctx.fillStyle = BLANCO;
-        ctx.font = `700 30px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx + 5, H - PIE_H / 2 + 11);
-
-      } else {
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DISEÑO UNA SOLA FOTO — hero image vertical
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        const FOTO_H = 850;
-
-        // Fondo blanco base
-        ctx.fillStyle = BLANCO;
-        ctx.fillRect(0, 0, W, H);
-
-        // Foto hero
-        cover(ctx, imgA, 0, 0, W, FOTO_H);
-
-        // Degradado inferior sobre foto
-        gradV(ctx, 0, FOTO_H - 340, W, 340, [
-          [0, "rgba(0,0,0,0)"],
-          [1, "rgba(0,0,0,0.78)"]
-        ]);
-
-        // Marca sobre foto
-        ctx.textAlign = "center";
-        ctx.shadowColor = "rgba(0,0,0,.7)";
-        ctx.shadowBlur  = 20;
-        ctx.fillStyle   = AMARILLO;
-        ctx.font        = `900 105px ${BC}`;
-        ctx.fillText((v.marca || "").toUpperCase(), cx, FOTO_H - 165);
-
-        // Modelo sobre foto
-        let mfs = 82;
-        ctx.font = `800 ${mfs}px ${BC}`;
-        const modeloStr = (v.modelo || "").toUpperCase();
-        while (ctx.measureText(modeloStr).width > W - 80 && mfs > 46) {
-          mfs -= 3; ctx.font = `800 ${mfs}px ${BC}`;
-        }
-        ctx.fillStyle = BLANCO;
-        ctx.fillText(modeloStr, cx, FOTO_H - 72);
-        ctx.shadowBlur = 0;
-
-        // Dominio arriba izquierda
-        if (dominio) {
-          roundRect(ctx, 40, 40, 260, 90, 12, BLANCO, "#D9D9D9");
-          ctx.fillStyle = NEGRO;
-          ctx.font = `800 56px ${BC}`;
-          ctx.textAlign = "left";
-          ctx.fillText(dominio, 65, 100);
-        }
-
-        // Logo arriba derecha
-        if (logoImg) {
-          const LR = 75;
-          const LX = W - LR - 28, LY = LR + 28;
-          ctx.save();
-          ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
-          ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
-          ctx.restore();
-          ctx.beginPath(); ctx.arc(LX, LY, LR + 4, 0, Math.PI * 2);
+          ctx.beginPath(); ctx.arc(LX, LY, LR+4, 0, Math.PI*2);
           ctx.strokeStyle = AMARILLO; ctx.lineWidth = 4; ctx.stroke();
         }
 
-        // Zona inferior blanca
-        ctx.fillStyle = BLANCO;
-        ctx.fillRect(0, FOTO_H, W, H - FOTO_H);
-
-        // Banda azul "AUTOPARTES DISPONIBLES"
-        roundRect(ctx, 40, FOTO_H + 40, W - 80, 90, 16, AZUL);
-        ctx.fillStyle   = BLANCO;
-        ctx.font        = `900 52px ${BC}`;
-        ctx.textAlign   = "center";
-        ctx.fillText("AUTOPARTES DISPONIBLES", cx, FOTO_H + 100);
-
-        // Lista de piezas
-        const piezas = ["MOTOR", "CAJA", "CHAPA", "INTERIOR"];
+        // Texto header — alineado a izquierda con margen post-franja
+        const TX = 36;
+        ctx.fillStyle = "rgba(255,255,255,0.5)";
+        ctx.font = `500 34px ${DM}`;
         ctx.textAlign = "left";
-        piezas.forEach((pieza, i) => {
-          const py = FOTO_H + 185 + i * 60;
+        ctx.fillText("NUEVO VEHÍCULO PARA", TX, 88);
+
+        ctx.fillStyle = BLANCO;
+        ctx.font = `900 110px ${BC}`;
+        // Reducir si el texto es muy largo
+        let hfs = 110;
+        while (ctx.measureText("VENTA POR PIEZAS").width > W - TX - 140 && hfs > 60) {
+          hfs -= 4; ctx.font = `900 ${hfs}px ${BC}`;
+        }
+        ctx.fillText("VENTA POR PIEZAS", TX, 200);
+
+        // ── 4. FOTO(S) ──
+        if (imgB) {
+          // Dos fotos: 65% arriba / 35% abajo
+          const f1h = Math.round(FOTO_H * 0.65);
+          const f2h = FOTO_H - f1h;
+          cover(ctx, imgA, 0, FOTO_Y,       W, f1h);
+          cover(ctx, imgB, 0, FOTO_Y + f1h, W, f2h);
+          // Separador difuminado entre fotos
+          gradV(ctx, 0, FOTO_Y + f1h - 80, W, 110,
+            [[0,"rgba(17,17,17,0)"],[1,"rgba(17,17,17,0.85)"]]);
+          gradV(ctx, 0, FOTO_Y + f1h, W, 60,
+            [[0,"rgba(17,17,17,0.85)"],[1,"rgba(17,17,17,0)"]]);
+        } else {
+          cover(ctx, imgA, 0, FOTO_Y, W, FOTO_H);
+        }
+
+        // Degradado inferior sobre foto — para leer marca/modelo
+        gradV(ctx, 0, FOTO_Y + FOTO_H - 460, W, 460, [
+          [0, "rgba(0,0,10,0)"],
+          [0.4, "rgba(0,0,10,0.2)"],
+          [1, "rgba(0,0,10,0.97)"]
+        ]);
+
+        // Badge dominio — arriba izquierda sobre la foto
+        if (dominio) {
+          ctx.font = `700 36px ${BC}`;
+          const dw = ctx.measureText(dominio).width + 48;
           ctx.fillStyle = AZUL;
-          ctx.font      = `800 42px ${BC}`;
-          ctx.fillText("✓", 80, py);
-          ctx.fillStyle = NEGRO;
-          ctx.font      = `700 42px ${BC}`;
-          ctx.fillText(pieza, 148, py);
+          ctx.fillRect(0, FOTO_Y, dw, 70);
+          ctx.fillStyle = BLANCO;
+          ctx.textAlign = "left";
+          ctx.fillText(dominio, 24, FOTO_Y + 49);
+        }
+
+        // MARCA — enorme en amarillo
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,1)";
+        ctx.shadowBlur = 40;
+        let mfs = 160;
+        ctx.font = `900 ${mfs}px ${BC}`;
+        while (ctx.measureText(marca).width > W - 60 && mfs > 60) {
+          mfs -= 4; ctx.font = `900 ${mfs}px ${BC}`;
+        }
+        ctx.fillStyle = AMARILLO;
+        ctx.fillText(marca, cx, FOTO_Y + FOTO_H - 170);
+
+        // MODELO — blanco, debajo de marca
+        let mfs2 = 82;
+        ctx.font = `700 ${mfs2}px ${BC}`;
+        while (ctx.measureText(modelo).width > W - 60 && mfs2 > 36) {
+          mfs2 -= 3; ctx.font = `700 ${mfs2}px ${BC}`;
+        }
+        ctx.fillStyle = BLANCO;
+        ctx.fillText(modelo, cx, FOTO_Y + FOTO_H - 62);
+        ctx.shadowBlur = 0;
+
+        // ── 5. SEPARADOR AMARILLO ──
+        const SY = FOTO_Y + FOTO_H;
+        ctx.fillStyle = AMARILLO;
+        ctx.fillRect(0, SY, W, SEP);
+
+        // ── 6. SPECS ──
+        if (specs.length > 0) {
+          const spY = SY + SEP + PAD;
+          const spH = 140;
+          const gap = 16;
+          const SW = Math.floor((W - 80 - (specs.length-1)*gap) / specs.length);
+          specs.forEach((sp, i) => {
+            const sx = 40 + i*(SW+gap);
+            rr(ctx, sx, spY, SW, spH, 12, "#161616");
+            rr(ctx, sx, spY, SW, spH, 12, null, sp.amarillo ? AMARILLO : "#303030", sp.amarillo ? 2.5 : 1);
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(255,255,255,0.35)";
+            ctx.font = `500 24px ${DM}`;
+            ctx.fillText(sp.l, sx+SW/2, spY+44);
+            ctx.fillStyle = sp.amarillo ? AMARILLO : BLANCO;
+            ctx.font = `900 60px ${BC}`;
+            ctx.fillText(sp.v, sx+SW/2, spY+116);
+          });
+        }
+
+        // ── 7. BOTÓN WHATSAPP ──
+        const bY = SY + SEP + SPH + PAD;
+        rr(ctx, 40, bY, W-80, WSP, 14, AZUL);
+
+        // Ícono circular W
+        const wX = 40+74, wY = bY + WSP/2;
+        ctx.beginPath(); ctx.arc(wX, wY, 34, 0, Math.PI*2);
+        ctx.fillStyle = BLANCO; ctx.fill();
+        ctx.fillStyle = AZUL;
+        ctx.font = `900 38px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("W", wX, wY+14);
+
+        // Número
+        ctx.fillStyle = BLANCO;
+        ctx.font = `900 76px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("2314 545224", cx+26, bY+86);
+
+        // ── 8. PIE ──
+        ctx.fillStyle = AZUL_OSC;
+        ctx.fillRect(0, H-PIE, W, PIE);
+        ctx.fillStyle = AMARILLO;
+        ctx.fillRect(0, H-PIE, 16, PIE);
+        ctx.fillStyle = BLANCO;
+        ctx.font = `700 32px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx+8, H-PIE/2+12);
+
+      } else {
+        // ══════════════════════════════════════════════════════
+        // DISEÑO MOTOR — una foto, zona blanca con info abajo
+        // ══════════════════════════════════════════════════════
+        const FOTO_H = 850;
+        ctx.fillStyle = BLANCO;
+        ctx.fillRect(0, 0, W, H);
+        cover(ctx, imgA, 0, 0, W, FOTO_H);
+        gradV(ctx, 0, FOTO_H-340, W, 340, [[0,"rgba(0,0,0,0)"],[1,"rgba(0,0,0,0.78)"]]);
+
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,.7)"; ctx.shadowBlur = 20;
+        ctx.fillStyle = AMARILLO;
+        ctx.font = `900 105px ${BC}`;
+        ctx.fillText(marca, cx, FOTO_H-165);
+
+        let mfs = 82;
+        ctx.font = `800 ${mfs}px ${BC}`;
+        while (ctx.measureText(modelo).width > W-80 && mfs>46) { mfs-=3; ctx.font=`800 ${mfs}px ${BC}`; }
+        ctx.fillStyle = BLANCO;
+        ctx.fillText(modelo, cx, FOTO_H-72);
+        ctx.shadowBlur = 0;
+
+        if (dominio) {
+          rr(ctx, 40, 40, 260, 90, 12, BLANCO, "#D9D9D9", 1);
+          ctx.fillStyle = NEGRO; ctx.font=`800 56px ${BC}`; ctx.textAlign="left";
+          ctx.fillText(dominio, 65, 100);
+        }
+        if (logo) {
+          const LR=75, LX=W-LR-28, LY=LR+28;
+          ctx.save(); ctx.beginPath(); ctx.arc(LX,LY,LR,0,Math.PI*2); ctx.clip();
+          ctx.drawImage(logo,LX-LR,LY-LR,LR*2,LR*2); ctx.restore();
+          ctx.beginPath(); ctx.arc(LX,LY,LR+4,0,Math.PI*2);
+          ctx.strokeStyle=AMARILLO; ctx.lineWidth=4; ctx.stroke();
+        }
+
+        ctx.fillStyle = BLANCO;
+        ctx.fillRect(0, FOTO_H, W, H-FOTO_H);
+        rr(ctx, 40, FOTO_H+40, W-80, 90, 16, AZUL);
+        ctx.fillStyle=BLANCO; ctx.font=`900 52px ${BC}`; ctx.textAlign="center";
+        ctx.fillText("AUTOPARTES DISPONIBLES", cx, FOTO_H+100);
+
+        const piezas = ["MOTOR","CAJA","CHAPA","INTERIOR"];
+        ctx.textAlign="left";
+        piezas.forEach((p,i) => {
+          const py = FOTO_H+185+i*60;
+          ctx.fillStyle=AZUL; ctx.font=`800 42px ${BC}`; ctx.fillText("✓", 80, py);
+          ctx.fillStyle=NEGRO; ctx.font=`700 42px ${BC}`; ctx.fillText(p, 148, py);
         });
 
-        // WhatsApp
-        ctx.fillStyle = AZUL;
-        ctx.font      = `900 60px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("2314 545224", cx, FOTO_H + 500);
+        ctx.fillStyle=AZUL; ctx.font=`900 60px ${BC}`; ctx.textAlign="center";
+        ctx.fillText("2314 545224", cx, FOTO_H+500);
+        rr(ctx, 100, FOTO_H+520, W-200, 66, 12, AMARILLO);
+        ctx.fillStyle=NEGRO; ctx.font=`800 38px ${BC}`; ctx.textAlign="center";
+        ctx.fillText("3 CUOTAS SIN INTERÉS", cx, FOTO_H+564);
 
-        // Badge amarillo financiación
-        roundRect(ctx, 100, FOTO_H + 520, W - 200, 66, 12, AMARILLO);
-        ctx.fillStyle = NEGRO;
-        ctx.font      = `800 38px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("3 CUOTAS SIN INTERÉS", cx, FOTO_H + 564);
-
-        // Franja corporativa
-        ctx.fillStyle = AZUL;
-        ctx.fillRect(0, H - 90, W, 90);
-        ctx.fillStyle = BLANCO;
-        ctx.font      = `700 34px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx, H - 32);
+        ctx.fillStyle=AZUL; ctx.fillRect(0, H-90, W, 90);
+        ctx.fillStyle=BLANCO; ctx.font=`700 34px ${BC}`; ctx.textAlign="center";
+        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx, H-32);
       }
     }
-        async function actualizarPreview() {
+
+    async function actualizarPreview() {
       const cv = document.getElementById("cv");
       const ld = document.getElementById("loading");
       ld.style.display = "block"; cv.style.display = "none";
@@ -464,9 +407,9 @@
     }
 
     function actualizarSlots() {
-      [["a", 0], ["b", 1]].forEach(([s, i]) => {
-        const slot  = document.getElementById("slot-" + s);
-        const empty = document.getElementById("slot-" + s + "-empty");
+      [["a",0],["b",1]].forEach(([s,i]) => {
+        const slot  = document.getElementById("slot-"+s);
+        const empty = document.getElementById("slot-"+s+"-empty");
         const url   = fotos[i];
         const old   = slot.querySelector("img");
         if (url) {
@@ -488,7 +431,7 @@
       btn.disabled = true; btn.textContent = "Generando…";
       const cv = document.createElement("canvas");
       await render(cv);
-      const nombre = "post_" + (V.marca||"").toLowerCase() + "_" + (V.modelo||"").toLowerCase().replace(/\s+/g,"_") + ".jpg";
+      const nombre = "post_"+(V.marca||"").toLowerCase()+"_"+(V.modelo||"").toLowerCase().replace(/\s+/g,"_")+".jpg";
       cv.toBlob(blob => {
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
@@ -506,11 +449,9 @@
       const { data } = await sb.from("vehiculos").select("*").eq("id", id).single();
       if (!data) return;
       V = data;
-      fotos = Array.isArray(data.fotos)
-        ? [data.fotos[0]||null, data.fotos[1]||null]
-        : [null, null];
-      document.getElementById("ctrl-nombre").textContent = (data.marca||"") + " " + (data.modelo||"");
-      const d = [data.anio, data.km ? Number(data.km).toLocaleString("es-AR") + " km" : null].filter(Boolean).join(" · ");
+      fotos = Array.isArray(data.fotos) ? [data.fotos[0]||null, data.fotos[1]||null] : [null,null];
+      document.getElementById("ctrl-nombre").textContent = (data.marca||"")+" "+(data.modelo||"");
+      const d = [data.anio, data.km ? Number(data.km).toLocaleString("es-AR")+" km" : null].filter(Boolean).join(" · ");
       document.getElementById("ctrl-datos").textContent = d;
       actualizarSlots();
       await actualizarPreview();
