@@ -190,41 +190,41 @@
         ctx.fillStyle = "#0A0A0A";
         ctx.fillRect(0, 0, W, H);
 
-        // ── HEADER — 220px, fondo azul oscuro con patrón ──
-        const HDR_H = 220;
+        // ── HEADER — 160px, fondo azul oscuro ──
+        const HDR_H = 160;
         ctx.fillStyle = "#001F4D";
         ctx.fillRect(0, 0, W, HDR_H);
 
         // Línea amarilla decorativa izquierda
         ctx.fillStyle = AMARILLO;
-        ctx.fillRect(0, 0, 14, HDR_H);
+        ctx.fillRect(0, 0, 12, HDR_H);
 
-        // "NUEVO VEHÍCULO PARA" — pequeño arriba
-        ctx.fillStyle = "rgba(255,255,255,0.6)";
-        ctx.font = `500 32px ${DM}`;
-        ctx.textAlign = "left";
-        ctx.fillText("NUEVO VEHÍCULO PARA", 46, 78);
-
-        // "VENTA POR PIEZAS" — grande y bold
-        ctx.fillStyle = BLANCO;
-        ctx.font = `900 86px ${BC}`;
-        ctx.fillText("VENTA POR PIEZAS", 46, 168);
-
-        // Logo arriba derecha
+        // Logo arriba derecha — pequeño, no tapa el texto
         if (logoImg) {
-          const LR = 52;
-          const LX = W - LR - 40, LY = HDR_H / 2;
+          const LR = 38;
+          const LX = W - LR - 36, LY = HDR_H / 2;
           ctx.save();
           ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
           ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
           ctx.restore();
-          ctx.beginPath(); ctx.arc(LX, LY, LR + 4, 0, Math.PI * 2);
-          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 4; ctx.stroke();
+          ctx.beginPath(); ctx.arc(LX, LY, LR + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 3; ctx.stroke();
         }
 
-        // ── ZONA FOTOS — 620px si 2 fotos, 700px si 1 ──
+        // "NUEVO VEHÍCULO PARA" — pequeño arriba
+        ctx.fillStyle = "rgba(255,255,255,0.55)";
+        ctx.font = `500 28px ${DM}`;
+        ctx.textAlign = "left";
+        ctx.fillText("NUEVO VEHÍCULO PARA", 34, 58);
+
+        // "VENTA POR PIEZAS" — grande, margen derecho para no tapar logo
+        ctx.fillStyle = BLANCO;
+        ctx.font = `900 82px ${BC}`;
+        ctx.fillText("VENTA POR PIEZAS", 34, 138);
+
+        // ── ZONA FOTOS — más grande ──
         const FOTO_ZONE_Y = HDR_H;
-        const FOTO_ZONE_H = hasDos ? 600 : 680;
+        const FOTO_ZONE_H = hasDos ? 660 : 740;
 
         if (hasDos) {
           // Foto principal grande arriba (400px)
@@ -299,7 +299,7 @@
         if (v.cilindrada) specs2.push({ label: "CILINDRADA", value: String(v.cilindrada),                        hl: false });
 
         const SPEC_Y2 = DATOS_Y2 + 36;
-        const SPEC_H2 = 130;
+        const SPEC_H2 = 114;
 
         if (specs2.length > 0) {
           const gap2 = 14;
@@ -322,7 +322,7 @@
         }
 
         // BOTÓN WHATSAPP
-        const btnY2 = SPEC_Y2 + SPEC_H2 + 28;
+        const btnY2 = SPEC_Y2 + SPEC_H2 + 18;
         const btnH2 = 110;
         roundRect(ctx, 40, btnY2, W - 80, btnH2, 12, AZUL);
 
