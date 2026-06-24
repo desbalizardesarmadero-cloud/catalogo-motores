@@ -162,148 +162,176 @@
       // ══════════════════════════════════════════════════════
       if (v.anio !== undefined) {
 
-        // ── MEDIDAS ──
-        const HDR_H   = 130;   // header azul oscuro
-        const FOTO1_H = 480;   // foto superior
-        const SEP_H   = 12;    // franja amarilla diagonal
-        const FOTO2_H = 430;   // foto inferior
-        const WSP_H   = 210;   // zona whatsapp blanca
-        const PIE_H   = 98;    // pie iconos
+        // ── HELPER: dibuja ícono de engranaje en canvas ──
+        function drawGear(ctx, cx, cy, r, color) {
+          const teeth = 8, iR = r*0.55, tW = 0.22;
+          ctx.save();
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          for (let i = 0; i < teeth; i++) {
+            const a0 = (i/teeth)*Math.PI*2 - tW, a1 = a0+tW, a2 = a1+tW, a3 = a2+tW;
+            ctx.arc(cx, cy, iR, a0-0.05, a0+0.05);
+            ctx.lineTo(cx + Math.cos(a0)*r, cy + Math.sin(a0)*r);
+            ctx.arc(cx, cy, r, a0, a2, false);
+            ctx.lineTo(cx + Math.cos(a2)*iR, cy + Math.sin(a2)*iR);
+            ctx.arc(cx, cy, iR, a2-0.05, a2+tW*2, false);
+          }
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = "#001A4D";
+          ctx.beginPath(); ctx.arc(cx, cy, r*0.32, 0, Math.PI*2); ctx.fill();
+          ctx.restore();
+        }
 
-        // ── FONDO GENERAL ──
-        ctx.fillStyle = "#002060";
+        // ── HELPER: dibuja íconos del pie sin emojis ──
+        function drawPieIcon(ctx, x, y, type, color) {
+          ctx.save(); ctx.fillStyle = color; ctx.strokeStyle = color; ctx.lineWidth = 4;
+          if (type === "shield") {
+            ctx.beginPath(); ctx.moveTo(x, y-18); ctx.lineTo(x+14, y-10);
+            ctx.lineTo(x+14, y+4); ctx.quadraticCurveTo(x+14,y+18,x,y+22);
+            ctx.quadraticCurveTo(x-14,y+18,x-14,y+4); ctx.lineTo(x-14,y-10); ctx.closePath(); ctx.fill();
+          } else if (type === "box") {
+            ctx.strokeRect(x-14, y-14, 28, 28); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x-14,y-2); ctx.lineTo(x+14,y-2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(x,y-14); ctx.lineTo(x,y-2); ctx.stroke();
+          } else if (type === "check") {
+            ctx.beginPath(); ctx.arc(x, y, 16, 0, Math.PI*2); ctx.stroke();
+            ctx.lineWidth = 5;
+            ctx.beginPath(); ctx.moveTo(x-8,y+1); ctx.lineTo(x-2,y+7); ctx.lineTo(x+9,y-7); ctx.stroke();
+          } else if (type === "chat") {
+            ctx.beginPath(); ctx.arc(x, y-2, 15, Math.PI*0.2, Math.PI*1.8); ctx.lineTo(x-6,y+14); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = "#001A4D";
+            for (let d=-7;d<=7;d+=7) { ctx.beginPath(); ctx.arc(x+d,y-2,2.5,0,Math.PI*2); ctx.fill(); }
+          }
+          ctx.restore();
+        }
+
+        // ── MEDIDAS FIJAS ──
+        const HDR_H   = 130;
+        const FOTO1_H = 470;
+        const SEP_H   = 18;
+        const FOTO2_H = 420;
+        const WSP_H   = 220;
+        const PIE_H   = 92;
+        // sanity: total = 130+470+18+420+220+92 = 1350 ✓
+
+        // ── FONDO ──
+        ctx.fillStyle = "#001235";
         ctx.fillRect(0, 0, W, H);
 
         // ══ HEADER ══
-        // Fondo degradado azul oscuro
-        const hGrad = ctx.createLinearGradient(0, 0, 0, HDR_H);
-        hGrad.addColorStop(0, "#001845");
-        hGrad.addColorStop(1, "#002878");
-        ctx.fillStyle = hGrad;
+        ctx.fillStyle = "#002060";
         ctx.fillRect(0, 0, W, HDR_H);
 
-        // URL web — izquierda con globo
+        // Globo ícono — izquierda
+        const gX = 52, gY = HDR_H/2;
+        ctx.strokeStyle = BLANCO; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(gX, gY, 24, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(gX, gY, 11, 24, 0, 0, Math.PI*2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(gX-24, gY); ctx.lineTo(gX+24, gY); ctx.stroke();
         ctx.fillStyle = BLANCO;
-        ctx.font = `600 34px ${DM}`;
+        ctx.font = `500 32px ${DM}`;
         ctx.textAlign = "left";
-        // Globe icon (dibujado)
-        const gX = 44, gY = HDR_H/2;
-        ctx.beginPath(); ctx.arc(gX, gY, 22, 0, Math.PI*2);
-        ctx.strokeStyle = BLANCO; ctx.lineWidth = 3; ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(gX, gY, 10, 22, 0, 0, Math.PI*2);
-        ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(gX-22, gY); ctx.lineTo(gX+22, gY);
-        ctx.stroke();
-        ctx.fillStyle = BLANCO;
-        ctx.font = `600 30px ${DM}`;
-        ctx.fillText("desbalizar.com.ar", gX+30, gY+11);
+        ctx.fillText("desbalizar.com.ar", gX + 34, gY + 12);
 
-        // Logo Desbalizar — derecha
+        // Logo — derecha, dibujado directo sin clip (evita bug negro)
         if (logo) {
-          const LW = 260, LH = 90;
+          const LH = 80, LW = logo.width * (LH / logo.height);
           const LX = W - LW - 30, LY = (HDR_H - LH)/2;
-          ctx.save();
-          rr(ctx, LX, LY, LW, LH, 12, null, null, 0);
-          ctx.beginPath();
-          ctx.rect(LX, LY, LW, LH);
-          ctx.clip();
           ctx.drawImage(logo, LX, LY, LW, LH);
-          ctx.restore();
         } else {
-          // Fallback texto logo
-          ctx.fillStyle = BLANCO;
-          ctx.font = `900 64px ${BC}`;
-          ctx.textAlign = "right";
-          ctx.fillText("Desbalizar", W - 36, HDR_H/2 + 22);
-          ctx.fillStyle = AMARILLO;
-          ctx.font = `500 28px ${DM}`;
-          ctx.fillText("Desarmadero · Autopartes", W - 36, HDR_H/2 + 54);
+          ctx.fillStyle = BLANCO; ctx.font = `900 56px ${BC}`; ctx.textAlign = "right";
+          ctx.fillText("Desbalizar", W-30, HDR_H/2+20);
+          ctx.fillStyle = AMARILLO; ctx.font = `500 26px ${DM}`;
+          ctx.fillText("Desarmadero · Autopartes", W-30, HDR_H/2+50);
         }
 
         // ══ FOTO SUPERIOR ══
         const F1Y = HDR_H;
         cover(ctx, imgA, 0, F1Y, W, FOTO1_H);
-        // Oscurecer bordes laterales de la foto para que el badge se lea bien
-        const vgLeft = ctx.createLinearGradient(0, 0, 120, 0);
-        vgLeft.addColorStop(0, "rgba(0,10,40,0.45)");
-        vgLeft.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = vgLeft;
+
+        // Degradado oscuro a la derecha para que el badge sea legible
+        const vgR = ctx.createLinearGradient(W*0.45, 0, W, 0);
+        vgR.addColorStop(0, "rgba(0,8,32,0)");
+        vgR.addColorStop(1, "rgba(0,8,32,0.72)");
+        ctx.fillStyle = vgR;
         ctx.fillRect(0, F1Y, W, FOTO1_H);
 
-        // ── BADGE MARCA/MODELO/DESARME — superpuesto sobre foto derecha ──
-        const BDG_W  = 420;
-        const BDG_H  = 320;
-        const BDG_X  = W - BDG_W - 36;
-        const BDG_Y  = F1Y + (FOTO1_H - BDG_H) / 2;
-        const BDG_R  = 22;
-
-        // Sombra del badge
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.55)";
-        ctx.shadowBlur   = 32;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 8;
-        rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, "#001A4D");
-        ctx.restore();
-
-        // Borde amarillo
-        rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, null, AMARILLO, 3);
-
-        // MARCA — blanco, grande
-        ctx.textAlign = "center";
-        const bcx = BDG_X + BDG_W/2;
-        ctx.fillStyle = BLANCO;
-        let mfs = 90;
-        ctx.font = `900 ${mfs}px ${BC}`;
-        while (ctx.measureText(marca).width > BDG_W - 30 && mfs > 44) { mfs -= 3; ctx.font = `900 ${mfs}px ${BC}`; }
-        ctx.fillText(marca, bcx, BDG_Y + 90);
-
-        // Línea separadora amarilla
-        ctx.fillStyle = AMARILLO;
-        ctx.fillRect(BDG_X + 30, BDG_Y + 104, BDG_W - 60, 4);
-
-        // MODELO — amarillo, enorme
-        let mfs2 = 120;
+        // ── BADGE MARCA/MODELO/DESARME ──
+        const BDG_W = 400, BDG_R = 18;
+        // Calcular altura dinámica según longitud del modelo
+        // El modelo puede necesitar 1 o 2 líneas
+        let mfs2 = 110;
         ctx.font = `900 ${mfs2}px ${BC}`;
-        while (ctx.measureText(modelo).width > BDG_W - 24 && mfs2 > 48) { mfs2 -= 4; ctx.font = `900 ${mfs2}px ${BC}`; }
-        ctx.fillStyle = AMARILLO;
-        ctx.fillText(modelo, bcx, BDG_Y + 104 + mfs2 - 6);
-
-        // DESARME INGRESADO — fila con ícono engranaje
-        const DY = BDG_Y + BDG_H - 72;
-        // Ícono engranaje simplificado
-        const gearX = BDG_X + 52, gearY = DY + 16;
-        ctx.save();
-        ctx.strokeStyle = AMARILLO; ctx.lineWidth = 5;
-        ctx.beginPath(); ctx.arc(gearX, gearY, 22, 0, Math.PI*2); ctx.stroke();
-        ctx.beginPath(); ctx.arc(gearX, gearY, 11, 0, Math.PI*2); ctx.stroke();
-        // Dientes
-        for (let a = 0; a < 8; a++) {
-          const ang = (a/8)*Math.PI*2;
-          const x1 = gearX + Math.cos(ang)*22, y1 = gearY + Math.sin(ang)*22;
-          const x2 = gearX + Math.cos(ang)*32, y2 = gearY + Math.sin(ang)*32;
-          ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.lineWidth=7; ctx.stroke();
+        const modelLines = [];
+        if (ctx.measureText(modelo).width <= BDG_W - 32) {
+          modelLines.push(modelo);
+        } else {
+          // partir en palabras y buscar el mejor corte
+          const words = modelo.split(" ");
+          let line = "";
+          for (const w of words) {
+            const test = line ? line+" "+w : w;
+            ctx.font = `900 ${mfs2}px ${BC}`;
+            if (ctx.measureText(test).width > BDG_W - 32 && line) {
+              modelLines.push(line); line = w;
+            } else { line = test; }
+          }
+          if (line) modelLines.push(line);
+          // Si aún no entra en una sola línea, reducir fuente
+          let maxW = 0;
+          modelLines.forEach(l => { ctx.font=`900 ${mfs2}px ${BC}`; maxW = Math.max(maxW, ctx.measureText(l).width); });
+          while (maxW > BDG_W-32 && mfs2>50) { mfs2-=4; ctx.font=`900 ${mfs2}px ${BC}`; maxW=0; modelLines.forEach(l=>{maxW=Math.max(maxW,ctx.measureText(l).width);}); }
         }
-        ctx.restore();
-        ctx.fillStyle = BLANCO;
-        ctx.font = `800 44px ${BC}`;
-        ctx.textAlign = "left";
-        ctx.fillText("DESARME", gearX + 36, DY + 8);
-        ctx.fillText("INGRESADO", gearX + 36, DY + 50);
 
-        // ══ SEPARADOR DIAGONAL AMARILLO ══
+        const lineH2 = mfs2 + 8;
+        const marcaH = 80, sepH = 8, desarmeH = 100, padV = 28;
+        const BDG_H = padV + marcaH + sepH + 14 + lineH2*modelLines.length + padV/2 + desarmeH;
+        const BDG_X = W - BDG_W - 28;
+        const BDG_Y = F1Y + (FOTO1_H - BDG_H)/2;
+
+        rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, "#001A4D");
+        rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, null, AMARILLO, 3.5);
+
+        const bcx = BDG_X + BDG_W/2;
+        let curY = BDG_Y + padV;
+
+        // Marca
+        let mfs = 74;
+        ctx.font = `900 ${mfs}px ${BC}`;
+        while (ctx.measureText(marca).width > BDG_W-32 && mfs>40) { mfs-=3; ctx.font=`900 ${mfs}px ${BC}`; }
+        ctx.fillStyle = BLANCO; ctx.textAlign = "center";
+        ctx.fillText(marca, bcx, curY + mfs*0.78);
+        curY += marcaH + 4;
+
+        // Separador
+        ctx.fillStyle = AMARILLO;
+        ctx.fillRect(BDG_X+24, curY, BDG_W-48, 4);
+        curY += 4 + 16;
+
+        // Modelo (una o dos líneas)
+        ctx.fillStyle = AMARILLO;
+        ctx.font = `900 ${mfs2}px ${BC}`;
+        modelLines.forEach(l => { ctx.fillText(l, bcx, curY + mfs2*0.82); curY += lineH2; });
+        curY += 6;
+
+        // DESARME INGRESADO con engranaje
+        const gearCX = BDG_X + 52, gearCY = curY + 36;
+        drawGear(ctx, gearCX, gearCY, 26, AMARILLO);
+        ctx.fillStyle = BLANCO;
+        ctx.font = `800 46px ${BC}`;
+        ctx.textAlign = "left";
+        ctx.fillText("DESARME", gearCX + 38, curY + 28);
+        ctx.fillText("INGRESADO", gearCX + 38, curY + 76);
+
+        // ══ SEPARADOR DOBLE LÍNEA AMARILLA ══
         const SEP_Y = F1Y + FOTO1_H;
         ctx.fillStyle = AMARILLO;
-        ctx.beginPath();
-        ctx.moveTo(0, SEP_Y);
-        ctx.lineTo(W, SEP_Y - 28);
-        ctx.lineTo(W, SEP_Y - 28 + SEP_H);
-        ctx.lineTo(0, SEP_Y + SEP_H);
-        ctx.closePath();
-        ctx.fill();
+        ctx.fillRect(0, SEP_Y, W, SEP_H);
+        ctx.fillStyle = "#001235";
+        ctx.fillRect(0, SEP_Y + 4, W, 4);
 
         // ══ FOTO INFERIOR ══
-        const F2Y = SEP_Y + SEP_H - 18;
+        const F2Y = SEP_Y + SEP_H;
         cover(ctx, imgB || imgA, 0, F2Y, W, FOTO2_H);
 
         // ══ ZONA WHATSAPP (blanca) ══
@@ -312,96 +340,84 @@
         ctx.fillRect(0, WSP_Y, W, WSP_H);
 
         // Texto "PEDÍ LA PIEZA QUE NECESITÁS"
-        ctx.textAlign = "center";
-        ctx.fillStyle = NEGRO;
-        ctx.font = `800 56px ${BC}`;
-        const pText = "PEDÍ LA PIEZA QUE NECESITÁS";
-        // "PIEZA" en azul
-        const before = "PEDÍ LA ";
-        const pieza  = "PIEZA";
-        const after  = " QUE NECESITÁS";
-        ctx.font = `800 56px ${BC}`;
-        const bw = ctx.measureText(before).width;
-        const pw = ctx.measureText(pieza).width;
-        const aw = ctx.measureText(after).width;
-        const total = bw + pw + aw;
-        let tx0 = cx - total/2;
-        const textY = WSP_Y + 72;
+        ctx.font = `800 58px ${BC}`;
+        const txtBefore = "PEDÍ LA ";
+        const txtPieza  = "PIEZA";
+        const txtAfter  = " QUE NECESITÁS";
+        const wBefore = ctx.measureText(txtBefore).width;
+        const wPieza  = ctx.measureText(txtPieza).width;
+        const wAfter  = ctx.measureText(txtAfter).width;
+        const wTotal  = wBefore + wPieza + wAfter;
+        let tx0 = cx - wTotal/2;
+        const textY = WSP_Y + 76;
         ctx.textAlign = "left";
-        ctx.fillStyle = NEGRO;
-        ctx.fillText(before, tx0, textY);
-        ctx.fillStyle = AZUL;
-        ctx.fillText(pieza, tx0 + bw, textY);
-        ctx.fillStyle = NEGRO;
-        ctx.fillText(after, tx0 + bw + pw, textY);
+        ctx.fillStyle = "#111"; ctx.fillText(txtBefore, tx0, textY);
+        ctx.fillStyle = AZUL;   ctx.fillText(txtPieza,  tx0+wBefore, textY);
+        ctx.fillStyle = "#111"; ctx.fillText(txtAfter,  tx0+wBefore+wPieza, textY);
 
-        // Ícono WhatsApp (círculo verde)
-        const wpX = 90, wpY = WSP_Y + 145;
-        ctx.beginPath(); ctx.arc(wpX, wpY, 52, 0, Math.PI*2);
+        // Fila WhatsApp: ícono + número
+        const ROW_Y = WSP_Y + 150;
+        // Círculo verde
+        const wpX = 100, wpY = ROW_Y;
+        ctx.beginPath(); ctx.arc(wpX, wpY, 58, 0, Math.PI*2);
         ctx.fillStyle = "#25D366"; ctx.fill();
-        // W de WhatsApp
+        // Burbuja WhatsApp: cuerpo redondo + colita
         ctx.fillStyle = BLANCO;
-        ctx.font = `900 58px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("W", wpX, wpY + 21);
+        ctx.beginPath(); ctx.arc(wpX, wpY-4, 32, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = "#25D366";
+        ctx.font = `900 52px ${BC}`; ctx.textAlign = "center";
+        ctx.fillText("W", wpX, wpY+14);
+        ctx.fillStyle = BLANCO;
+        ctx.font = `900 52px ${BC}`;
+        ctx.fillText("W", wpX, wpY+13);
 
-        // NÚMERO GRANDE
+        // Número
         ctx.fillStyle = "#002060";
-        ctx.font = `900 118px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("2314 545224", cx + 30, WSP_Y + 182);
+        ctx.font = `900 128px ${BC}`;
+        ctx.textAlign = "left";
+        ctx.fillText("2314 545224", wpX + 76, ROW_Y + 48);
 
-        // Flecha amarilla curva (simplificada como chevron)
+        // Flecha amarilla ↘
         ctx.fillStyle = AMARILLO;
-        ctx.font = `900 80px ${BC}`;
+        ctx.font = `bold 70px ${DM}`;
         ctx.textAlign = "right";
-        ctx.fillText("↘", W - 30, WSP_Y + 185);
+        ctx.fillText("↘", W - 24, ROW_Y + 55);
 
-        // ══ PIE — iconos beneficios ══
+        // ══ PIE — 4 beneficios sin emojis ══
         const PIE_Y = WSP_Y + WSP_H;
-        const pieGrad = ctx.createLinearGradient(0, PIE_Y, 0, H);
-        pieGrad.addColorStop(0, "#002878");
-        pieGrad.addColorStop(1, "#001845");
-        ctx.fillStyle = pieGrad;
+        ctx.fillStyle = "#002060";
         ctx.fillRect(0, PIE_Y, W, PIE_H);
 
-        // 4 iconos con texto
         const beneficios = [
-          { icon: "🛡", label: "COMPRA SEGURA",      sub: "Protegemos tu compra" },
-          { icon: "📦", label: "ENVÍOS A TODO EL PAÍS", sub: "Rapidez y confianza" },
-          { icon: "✅", label: "GARANTÍA DE ORIGEN", sub: "Piezas verificadas" },
-          { icon: "💬", label: "ATENCIÓN PERSONALIZADA", sub: "Te asesoramos siempre" },
+          { type:"shield", label:"COMPRA SEGURA",       sub:"Protegemos tu compra" },
+          { type:"box",    label:"ENVÍOS A TODO EL PAÍS", sub:"Rapidez y confianza" },
+          { type:"check",  label:"GARANTÍA DE ORIGEN",  sub:"Piezas verificadas" },
+          { type:"chat",   label:"ATENCIÓN PERSONALIZADA", sub:"Te asesoramos siempre" },
         ];
         const colW = W / 4;
         beneficios.forEach((b, i) => {
           const bx = colW * i + colW/2;
-          const by = PIE_Y;
-          // Separador vertical (excepto primero)
           if (i > 0) {
-            ctx.fillStyle = "rgba(255,255,255,0.15)";
-            ctx.fillRect(colW * i, PIE_Y + 14, 1, PIE_H - 28);
+            ctx.fillStyle = "rgba(255,255,255,0.18)";
+            ctx.fillRect(colW*i, PIE_Y+12, 1, PIE_H-24);
           }
+          drawPieIcon(ctx, bx, PIE_Y + 28, b.type, AMARILLO);
           ctx.textAlign = "center";
-          ctx.font = `500 28px ${DM}`;
           ctx.fillStyle = BLANCO;
-          ctx.fillText(b.icon, bx, by + 38);
-          ctx.font = `700 24px ${BC}`;
-          ctx.fillStyle = BLANCO;
-          // Dividir label largo en 2 líneas si es necesario
-          if (ctx.measureText(b.label).width > colW - 16) {
-            const words = b.label.split(" ");
-            const mid = Math.ceil(words.length/2);
-            ctx.fillText(words.slice(0,mid).join(" "), bx, by + 58);
-            ctx.fillText(words.slice(mid).join(" "), bx, by + 76);
-            ctx.fillStyle = "rgba(255,255,255,0.55)";
-            ctx.font = `400 19px ${DM}`;
-            ctx.fillText(b.sub, bx, by + 92);
-          } else {
-            ctx.fillText(b.label, bx, by + 62);
-            ctx.fillStyle = "rgba(255,255,255,0.55)";
-            ctx.font = `400 19px ${DM}`;
-            ctx.fillText(b.sub, bx, by + 84);
-          }
+          // Partir label si es muy largo
+          ctx.font = `700 22px ${BC}`;
+          const words = b.label.split(" ");
+          let lines = [], cur = "";
+          words.forEach(w => {
+            const test = cur ? cur+" "+w : w;
+            if (ctx.measureText(test).width > colW-18 && cur) { lines.push(cur); cur=w; } else cur=test;
+          });
+          if (cur) lines.push(cur);
+          const lineStart = PIE_Y + 56;
+          lines.forEach((l,li) => ctx.fillText(l, bx, lineStart + li*24));
+          ctx.fillStyle = "rgba(255,255,255,0.5)";
+          ctx.font = `400 17px ${DM}`;
+          ctx.fillText(b.sub, bx, lineStart + lines.length*24 + 4);
         });
 
       } else {
