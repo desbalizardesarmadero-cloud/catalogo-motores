@@ -178,164 +178,179 @@
 
       if (hasTwo) {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // DISEÑO VEHÍCULO — una foto hero grande, datos abajo
+        // DISEÑO VEHÍCULO — estilo MG + Grupo DT
+        // Zona superior: fondo oscuro con header corporativo
+        // Zona fotos: adaptativa (1 o 2 fotos)
+        // Zona datos: badges specs + WSP + pie azul
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-        const FOTO_H2 = 900;
-        const DATOS_Y = FOTO_H2;
-        const DATOS_H = H - DATOS_Y;  // 450px para datos
+        const hasDos = !!(imgA && imgB);
 
-        // FONDO NEGRO base
-        ctx.fillStyle = NEGRO;
+        // ── FONDO BASE NEGRO ──
+        ctx.fillStyle = "#0A0A0A";
         ctx.fillRect(0, 0, W, H);
 
-        // FOTO hero
-        cover(ctx, imgA, 0, 0, W, FOTO_H2);
+        // ── HEADER — 220px, fondo azul oscuro con patrón ──
+        const HDR_H = 220;
+        ctx.fillStyle = "#001F4D";
+        ctx.fillRect(0, 0, W, HDR_H);
 
-        // Degradado inferior sobre foto
-        gradV(ctx, 0, FOTO_H2 - 420, W, 420, [
-          [0, "rgba(0,0,0,0)"],
-          [1, "rgba(0,0,0,0.88)"]
-        ]);
-
-        // BADGE "DESARME INGRESADO" arriba izquierda
-        ctx.font = `700 34px ${BC}`;
-        const badgeTxt = "DESARME INGRESADO";
-        const bw = ctx.measureText(badgeTxt).width + 52;
+        // Línea amarilla decorativa izquierda
         ctx.fillStyle = AMARILLO;
-        ctx.fillRect(40, 44, bw, 66);
-        ctx.fillStyle = NEGRO;
+        ctx.fillRect(0, 0, 14, HDR_H);
+
+        // "NUEVO VEHÍCULO PARA" — pequeño arriba
+        ctx.fillStyle = "rgba(255,255,255,0.6)";
+        ctx.font = `500 32px ${DM}`;
         ctx.textAlign = "left";
-        ctx.fillText(badgeTxt, 66, 90);
+        ctx.fillText("NUEVO VEHÍCULO PARA", 46, 78);
 
-        // BADGE DOMINIO/RUDAC arriba derecha
-        if (dominio) {
-          ctx.font = `700 34px ${BC}`;
-          const dw = ctx.measureText(dominio).width + 52;
-          roundRect(ctx, W - dw - 40, 44, dw, 66, 8, "rgba(0,0,0,0.65)");
-          ctx.strokeStyle = "rgba(255,255,255,0.3)";
-          ctx.lineWidth = 1.5;
-          roundRect(ctx, W - dw - 40, 44, dw, 66, 8, null, "rgba(255,255,255,0.3)");
-          ctx.fillStyle = "rgba(255,255,255,0.85)";
-          ctx.textAlign = "left";
-          ctx.fillText(dominio, W - dw - 14, 91);
-        }
-
-        // MARCA — enorme en amarillo sobre la foto
-        ctx.textAlign = "center";
-        ctx.shadowColor = "rgba(0,0,0,0.95)";
-        ctx.shadowBlur = 28;
-        let mfs = 140;
-        ctx.font = `900 ${mfs}px ${BC}`;
-        const marcaStr = (v.marca || "").toUpperCase();
-        while (ctx.measureText(marcaStr).width > W - 80 && mfs > 60) {
-          mfs -= 4; ctx.font = `900 ${mfs}px ${BC}`;
-        }
-        ctx.fillStyle = AMARILLO;
-        ctx.fillText(marcaStr, cx, FOTO_H2 - 185);
-
-        // MODELO — blanco debajo de marca
-        let mfs2 = 92;
-        ctx.font = `700 ${mfs2}px ${BC}`;
-        const modeloStr = (v.modelo || "").toUpperCase();
-        while (ctx.measureText(modeloStr).width > W - 80 && mfs2 > 40) {
-          mfs2 -= 3; ctx.font = `700 ${mfs2}px ${BC}`;
-        }
+        // "VENTA POR PIEZAS" — grande y bold
         ctx.fillStyle = BLANCO;
-        ctx.fillText(modeloStr, cx, FOTO_H2 - 72);
-        ctx.shadowBlur = 0;
+        ctx.font = `900 86px ${BC}`;
+        ctx.fillText("VENTA POR PIEZAS", 46, 168);
 
-        // ── ZONA DE DATOS (fondo negro) ──
-
-        // SPECS — badges en fila
-        const specs = [];
-        if (v.anio)       specs.push({ label: "AÑO",        value: String(v.anio),                                   hl: true  });
-        if (v.km)         specs.push({ label: "KM",          value: Number(v.km).toLocaleString("es-AR"),             hl: false });
-        if (v.cilindrada) specs.push({ label: "CILINDRADA",  value: String(v.cilindrada),                             hl: false });
-
-        if (specs.length > 0) {
-          const SPEC_Y = DATOS_Y + 44;
-          const SPEC_H = 148;
-          const gap = 16;
-          const SW = Math.floor((W - 80 - (specs.length - 1) * gap) / specs.length);
-          specs.forEach((sp, i) => {
-            const sx = 40 + i * (SW + gap);
-            roundRect(ctx, sx, SPEC_Y, SW, SPEC_H, 10, "#1c1c1c");
-            ctx.strokeStyle = "#2e2e2e";
-            ctx.lineWidth = 1;
-            roundRect(ctx, sx, SPEC_Y, SW, SPEC_H, 10, null, "#2e2e2e");
-            ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(255,255,255,0.38)";
-            ctx.font = `500 24px ${DM}`;
-            ctx.fillText(sp.label, sx + SW / 2, SPEC_Y + 48);
-            ctx.fillStyle = sp.hl ? AMARILLO : BLANCO;
-            ctx.font = `900 56px ${BC}`;
-            ctx.fillText(sp.value, sx + SW / 2, SPEC_Y + 116);
-          });
-        }
-
-        // LÍNEA DIVISORIA
-        const lineY = DATOS_Y + (specs.length > 0 ? 220 : 44);
-        ctx.fillStyle = "#242424";
-        ctx.fillRect(40, lineY, W - 80, 1);
-
-        // CTA
-        ctx.textAlign = "center";
-        ctx.fillStyle = "rgba(255,255,255,0.42)";
-        ctx.font = `600 30px ${DM}`;
-        ctx.fillText("PEDÍ LA PIEZA QUE NECESITÁS", cx, lineY + 56);
-
-        // BOTÓN WHATSAPP
-        const btnY = lineY + 76;
-        const btnH = 116;
-        roundRect(ctx, 40, btnY, W - 80, btnH, 12, AZUL);
-        ctx.fillStyle = BLANCO;
-        ctx.font = `900 72px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("2314 545224", cx, btnY + 80);
-
-        // PIE CORPORATIVO
-        const PIE_H2 = 72;
-        ctx.fillStyle = AZUL;
-        ctx.fillRect(0, H - PIE_H2, W, PIE_H2);
-
+        // Logo arriba derecha
         if (logoImg) {
-          const LR = 26;
-          const LX = 44 + LR, LY = H - PIE_H2 / 2;
+          const LR = 52;
+          const LX = W - LR - 40, LY = HDR_H / 2;
           ctx.save();
           ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
           ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
           ctx.restore();
-          ctx.beginPath(); ctx.arc(LX, LY, LR + 2.5, 0, Math.PI * 2);
-          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 3; ctx.stroke();
+          ctx.beginPath(); ctx.arc(LX, LY, LR + 4, 0, Math.PI * 2);
+          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 4; ctx.stroke();
         }
+
+        // ── ZONA FOTOS — 620px si 2 fotos, 700px si 1 ──
+        const FOTO_ZONE_Y = HDR_H;
+        const FOTO_ZONE_H = hasDos ? 600 : 680;
+
+        if (hasDos) {
+          // Foto principal grande arriba (400px)
+          cover(ctx, imgA, 0, FOTO_ZONE_Y, W, 400);
+          // Foto secundaria abajo (200px) — franja
+          cover(ctx, imgB, 0, FOTO_ZONE_Y + 400, W, 200);
+          // Degradado de unión entre las dos fotos
+          gradV(ctx, 0, FOTO_ZONE_Y + 360, W, 80, [
+            [0, "rgba(10,10,10,0)"],
+            [1, "rgba(10,10,10,0.7)"]
+          ]);
+          gradV(ctx, 0, FOTO_ZONE_Y + 400, W, 40, [
+            [0, "rgba(10,10,10,0.7)"],
+            [1, "rgba(10,10,10,0)"]
+          ]);
+        } else {
+          cover(ctx, imgA, 0, FOTO_ZONE_Y, W, FOTO_ZONE_H);
+        }
+
+        // Degradado inferior sobre zona de fotos (para leer marca)
+        gradV(ctx, 0, FOTO_ZONE_Y + FOTO_ZONE_H - 360, W, 360, [
+          [0, "rgba(10,10,10,0)"],
+          [1, "rgba(10,10,10,0.96)"]
+        ]);
+
+        // BADGE DOMINIO arriba izquierda sobre fotos
+        if (dominio) {
+          ctx.font = `700 30px ${BC}`;
+          const dw = ctx.measureText(dominio).width + 44;
+          ctx.fillStyle = AZUL;
+          ctx.fillRect(0, FOTO_ZONE_Y, dw, 60);
+          ctx.fillStyle = BLANCO;
+          ctx.textAlign = "left";
+          ctx.fillText(dominio, 22, FOTO_ZONE_Y + 41);
+        }
+
+        // MARCA — enorme en amarillo sobre degradado inferior
+        const marcaStr2 = (v.marca || "").toUpperCase();
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0,0,0,1)";
+        ctx.shadowBlur = 30;
+        let mfsV = 148;
+        ctx.font = `900 ${mfsV}px ${BC}`;
+        while (ctx.measureText(marcaStr2).width > W - 80 && mfsV > 60) {
+          mfsV -= 4; ctx.font = `900 ${mfsV}px ${BC}`;
+        }
+        ctx.fillStyle = AMARILLO;
+        ctx.fillText(marcaStr2, cx, FOTO_ZONE_Y + FOTO_ZONE_H - 168);
+
+        // MODELO — blanco debajo
+        const modeloStr2 = (v.modelo || "").toUpperCase();
+        let mfsV2 = 82;
+        ctx.font = `700 ${mfsV2}px ${BC}`;
+        while (ctx.measureText(modeloStr2).width > W - 60 && mfsV2 > 38) {
+          mfsV2 -= 3; ctx.font = `700 ${mfsV2}px ${BC}`;
+        }
+        ctx.fillStyle = BLANCO;
+        ctx.fillText(modeloStr2, cx, FOTO_ZONE_Y + FOTO_ZONE_H - 60);
+        ctx.shadowBlur = 0;
+
+        // ── ZONA DATOS ──
+        const DATOS_Y2 = FOTO_ZONE_Y + FOTO_ZONE_H;
+
+        // Línea separadora amarilla
+        ctx.fillStyle = AMARILLO;
+        ctx.fillRect(0, DATOS_Y2, W, 6);
+
+        // SPECS — badges horizontales
+        const specs2 = [];
+        if (v.anio)       specs2.push({ label: "AÑO",       value: String(v.anio),                              hl: true  });
+        if (v.km)         specs2.push({ label: "KM",         value: Number(v.km).toLocaleString("es-AR"),        hl: false });
+        if (v.cilindrada) specs2.push({ label: "CILINDRADA", value: String(v.cilindrada),                        hl: false });
+
+        const SPEC_Y2 = DATOS_Y2 + 36;
+        const SPEC_H2 = 130;
+
+        if (specs2.length > 0) {
+          const gap2 = 14;
+          const SW2 = Math.floor((W - 80 - (specs2.length - 1) * gap2) / specs2.length);
+          specs2.forEach((sp, i) => {
+            const sx = 40 + i * (SW2 + gap2);
+            // fondo badge con borde amarillo si highlight
+            roundRect(ctx, sx, SPEC_Y2, SW2, SPEC_H2, 10, "#161616");
+            ctx.strokeStyle = sp.hl ? AMARILLO : "#2a2a2a";
+            ctx.lineWidth = sp.hl ? 2 : 1;
+            roundRect(ctx, sx, SPEC_Y2, SW2, SPEC_H2, 10, null, sp.hl ? AMARILLO : "#2a2a2a");
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(255,255,255,0.4)";
+            ctx.font = `500 22px ${DM}`;
+            ctx.fillText(sp.label, sx + SW2 / 2, SPEC_Y2 + 42);
+            ctx.fillStyle = sp.hl ? AMARILLO : BLANCO;
+            ctx.font = `900 52px ${BC}`;
+            ctx.fillText(sp.value, sx + SW2 / 2, SPEC_Y2 + 106);
+          });
+        }
+
+        // BOTÓN WHATSAPP
+        const btnY2 = SPEC_Y2 + SPEC_H2 + 28;
+        const btnH2 = 110;
+        roundRect(ctx, 40, btnY2, W - 80, btnH2, 12, AZUL);
+
+        // ícono WSP manual
+        const wicX = 40 + 70, wicY = btnY2 + btnH2 / 2;
+        ctx.beginPath(); ctx.arc(wicX, wicY, 32, 0, Math.PI * 2);
+        ctx.fillStyle = BLANCO; ctx.fill();
+        ctx.fillStyle = AZUL;
+        ctx.font = `900 36px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("W", wicX, wicY + 13);
+
+        ctx.fillStyle = BLANCO;
+        ctx.font = `900 70px ${BC}`;
+        ctx.textAlign = "center";
+        ctx.fillText("2314 545224", cx + 22, btnY2 + 78);
+
+        // PIE CORPORATIVO
+        const VPIE_H = 76;
+        ctx.fillStyle = "#001F4D";
+        ctx.fillRect(0, H - VPIE_H, W, VPIE_H);
+        ctx.fillStyle = AMARILLO;
+        ctx.fillRect(0, H - VPIE_H, 14, VPIE_H);
 
         ctx.fillStyle = BLANCO;
         ctx.font = `700 30px ${BC}`;
         ctx.textAlign = "center";
-        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx + 20, H - PIE_H2 / 2 + 11);
-
-        // PIE CORPORATIVO azul
-        const PIE_H = 70;
-        ctx.fillStyle = AZUL;
-        ctx.fillRect(0, H - PIE_H, W, PIE_H);
-
-        // Logo círculo en el pie
-        if (logoImg) {
-          const LR = 26;
-          const LX = 40 + LR, LY = H - PIE_H / 2;
-          ctx.save();
-          ctx.beginPath(); ctx.arc(LX, LY, LR, 0, Math.PI * 2); ctx.clip();
-          ctx.drawImage(logoImg, LX - LR, LY - LR, LR * 2, LR * 2);
-          ctx.restore();
-          ctx.beginPath(); ctx.arc(LX, LY, LR + 2, 0, Math.PI * 2);
-          ctx.strokeStyle = AMARILLO; ctx.lineWidth = 2.5; ctx.stroke();
-        }
-
-        ctx.fillStyle = BLANCO;
-        ctx.font = `700 28px ${BC}`;
-        ctx.textAlign = "center";
-        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx + 20, H - PIE_H / 2 + 10);
+        ctx.fillText("DESBALIZAR S.A. · BOLÍVAR · BUENOS AIRES", cx + 7, H - VPIE_H / 2 + 11);
 
       } else {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
