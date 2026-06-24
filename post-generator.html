@@ -256,72 +256,86 @@
         ctx.fillStyle = vgR;
         ctx.fillRect(0, F1Y, W, FOTO1_H);
 
-        // ── BADGE MARCA/MODELO/DESARME ──
-        const BDG_W = 400, BDG_R = 18;
-        // Calcular altura dinámica según longitud del modelo
-        // El modelo puede necesitar 1 o 2 líneas
-        let mfs2 = 110;
-        ctx.font = `900 ${mfs2}px ${BC}`;
-        const modelLines = [];
-        if (ctx.measureText(modelo).width <= BDG_W - 32) {
-          modelLines.push(modelo);
-        } else {
-          // partir en palabras y buscar el mejor corte
-          const words = modelo.split(" ");
-          let line = "";
-          for (const w of words) {
-            const test = line ? line+" "+w : w;
-            ctx.font = `900 ${mfs2}px ${BC}`;
-            if (ctx.measureText(test).width > BDG_W - 32 && line) {
-              modelLines.push(line); line = w;
-            } else { line = test; }
-          }
-          if (line) modelLines.push(line);
-          // Si aún no entra en una sola línea, reducir fuente
-          let maxW = 0;
-          modelLines.forEach(l => { ctx.font=`900 ${mfs2}px ${BC}`; maxW = Math.max(maxW, ctx.measureText(l).width); });
-          while (maxW > BDG_W-32 && mfs2>50) { mfs2-=4; ctx.font=`900 ${mfs2}px ${BC}`; maxW=0; modelLines.forEach(l=>{maxW=Math.max(maxW,ctx.measureText(l).width);}); }
-        }
-
-        const lineH2 = mfs2 + 8;
-        const marcaH = 80, sepH = 8, desarmeH = 100, padV = 28;
-        const BDG_H = padV + marcaH + sepH + 14 + lineH2*modelLines.length + padV/2 + desarmeH;
-        const BDG_X = W - BDG_W - 28;
-        const BDG_Y = F1Y + (FOTO1_H - BDG_H)/2;
+        // ── BADGE MARCA/MODELO/DESARME — altura FIJA, texto se adapta ──
+        const BDG_W = 390, BDG_H = 360, BDG_R = 18;
+        const BDG_X = W - BDG_W - 24;
+        const BDG_Y = F1Y + 40;  // pegado arriba con margen
 
         rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, "#001A4D");
         rr(ctx, BDG_X, BDG_Y, BDG_W, BDG_H, BDG_R, null, AMARILLO, 3.5);
 
         const bcx = BDG_X + BDG_W/2;
-        let curY = BDG_Y + padV;
+        const PAD = 22;
 
-        // Marca
-        let mfs = 74;
+        // ── MARCA (zona fija: 80px de alto) ──
+        let mfs = 72;
         ctx.font = `900 ${mfs}px ${BC}`;
-        while (ctx.measureText(marca).width > BDG_W-32 && mfs>40) { mfs-=3; ctx.font=`900 ${mfs}px ${BC}`; }
+        while (ctx.measureText(marca).width > BDG_W - 28 && mfs > 36) { mfs -= 3; ctx.font = `900 ${mfs}px ${BC}`; }
         ctx.fillStyle = BLANCO; ctx.textAlign = "center";
-        ctx.fillText(marca, bcx, curY + mfs*0.78);
-        curY += marcaH + 4;
+        ctx.fillText(marca, bcx, BDG_Y + PAD + mfs * 0.82);
+        const MARCA_BOTTOM = BDG_Y + PAD + 80;
 
-        // Separador
+        // ── SEPARADOR ──
         ctx.fillStyle = AMARILLO;
-        ctx.fillRect(BDG_X+24, curY, BDG_W-48, 4);
-        curY += 4 + 16;
+        ctx.fillRect(BDG_X + 20, MARCA_BOTTOM, BDG_W - 40, 4);
 
-        // Modelo (una o dos líneas)
+        // ── MODELO — zona disponible fija: de MARCA_BOTTOM+4 hasta DESARME_TOP ──
+        const DESARME_H = 96;  // altura reservada abajo para "DESARME INGRESADO"
+        const MODELO_TOP = MARCA_BOTTOM + 4 + 10;
+        const MODELO_BOT = BDG_Y + BDG_H - PAD - DESARME_H;
+        const MODELO_ZONE = MODELO_BOT - MODELO_TOP;  // px disponibles para el modelo
+
+        // Partir modelo en máximo 2 líneas, reducir fuente hasta que entren
+        function splitModel(text, maxW, ctx, font) {
+          // intenta 1 línea
+          ctx.font = font;
+          if (ctx.measureText(text).width <= maxW) return [text];
+          // parte en 2: busca el mejor corte por palabras
+          const words = text.split(" ");
+          let best = null, bestDiff = Infinity;
+          for (let i = 1; i < words.length; i++) {
+            const l1 = words.slice(0, i).join(" ");
+            const l2 = words.slice(i).join(" ");
+            const diff = Math.abs(ctx.measureText(l1).width - ctx.measureText(l2).width);
+            if (diff < bestDiff) { bestDiff = diff; best = [l1, l2]; }
+          }
+          return best || [text];
+        }
+
+        let mfs2 = 100;
+        let modelLines2 = [];
+        const maxMW = BDG_W - 28;
+        // Reducir hasta que 2 líneas entren en la zona disponible Y en el ancho
+        while (mfs2 >= 38) {
+          ctx.font = `900 ${mfs2}px ${BC}`;
+          const lines = splitModel(modelo, maxMW, ctx, `900 ${mfs2}px ${BC}`);
+          const neededH = lines.length * (mfs2 * 1.1);
+          let maxLineW = 0;
+          lines.forEach(l => { ctx.font=`900 ${mfs2}px ${BC}`; maxLineW = Math.max(maxLineW, ctx.measureText(l).width); });
+          if (neededH <= MODELO_ZONE && maxLineW <= maxMW) { modelLines2 = lines; break; }
+          mfs2 -= 4;
+        }
+        if (!modelLines2.length) modelLines2 = [modelo];
+
+        const lineH2 = mfs2 * 1.1;
+        const totalModelH = modelLines2.length * lineH2;
+        let modelStartY = MODELO_TOP + (MODELO_ZONE - totalModelH) / 2 + mfs2 * 0.82;
         ctx.fillStyle = AMARILLO;
         ctx.font = `900 ${mfs2}px ${BC}`;
-        modelLines.forEach(l => { ctx.fillText(l, bcx, curY + mfs2*0.82); curY += lineH2; });
-        curY += 6;
+        ctx.textAlign = "center";
+        modelLines2.forEach(l => { ctx.fillText(l, bcx, modelStartY); modelStartY += lineH2; });
 
-        // DESARME INGRESADO con engranaje
-        const gearCX = BDG_X + 52, gearCY = curY + 36;
-        drawGear(ctx, gearCX, gearCY, 26, AMARILLO);
+        // ── DESARME INGRESADO ──
+        const DZ_Y = BDG_Y + BDG_H - PAD - DESARME_H;
+        ctx.fillStyle = "rgba(255,255,255,0.08)";
+        ctx.fillRect(BDG_X + 12, DZ_Y, BDG_W - 24, DESARME_H);
+        const gearCX = BDG_X + 44, gearCY = DZ_Y + DESARME_H/2;
+        drawGear(ctx, gearCX, gearCY, 22, AMARILLO);
         ctx.fillStyle = BLANCO;
-        ctx.font = `800 46px ${BC}`;
+        ctx.font = `800 40px ${BC}`;
         ctx.textAlign = "left";
-        ctx.fillText("DESARME", gearCX + 38, curY + 28);
-        ctx.fillText("INGRESADO", gearCX + 38, curY + 76);
+        ctx.fillText("DESARME", gearCX + 32, DZ_Y + 38);
+        ctx.fillText("INGRESADO", gearCX + 32, DZ_Y + 80);
 
         // ══ SEPARADOR DOBLE LÍNEA AMARILLA ══
         const SEP_Y = F1Y + FOTO1_H;
