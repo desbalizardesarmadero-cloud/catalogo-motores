@@ -224,7 +224,11 @@
 
         // ── ZONA FOTOS — más grande ──
         const FOTO_ZONE_Y = HDR_H;
-        const FOTO_ZONE_H = hasDos ? 660 : 740;
+        const VPIE_H = 76;
+        // altura dinámica: la foto ocupa todo lo que no usan header + datos + pie
+        const specsCount = [v.anio, v.km, v.cilindrada].filter(Boolean).length;
+        const DATOS_NEEDED = 6 + (specsCount > 0 ? 36 + 114 + 18 : 36) + 110 + 24 + VPIE_H;
+        const FOTO_ZONE_H = H - HDR_H - DATOS_NEEDED;
 
         if (hasDos) {
           // Foto principal grande arriba (400px)
@@ -341,7 +345,7 @@
         ctx.fillText("2314 545224", cx + 22, btnY2 + 78);
 
         // PIE CORPORATIVO
-        const VPIE_H = 76;
+        // VPIE_H ya declarado arriba
         ctx.fillStyle = "#001F4D";
         ctx.fillRect(0, H - VPIE_H, W, VPIE_H);
         ctx.fillStyle = AMARILLO;
